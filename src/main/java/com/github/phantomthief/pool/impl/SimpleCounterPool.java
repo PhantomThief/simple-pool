@@ -59,7 +59,7 @@ public class SimpleCounterPool<T> implements Pool<T> {
         idleObjects = new LinkedBlockingDeque<>();
 
         evictExecutor = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setDaemon(true) //
-                .setNameFormat("simple-counter-pool-evic-%d") //
+                .setNameFormat("simple-counter-pool-evict-%d") //
                 .build());
 
         evictFuture = evictExecutor.scheduleWithFixedDelay(this::checkEvict, evictCheckPeriod,
