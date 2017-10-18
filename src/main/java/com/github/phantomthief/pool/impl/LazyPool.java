@@ -2,7 +2,6 @@ package com.github.phantomthief.pool.impl;
 
 import static com.github.phantomthief.util.MoreSuppliers.lazy;
 
-import java.time.Duration;
 import java.util.function.Supplier;
 
 import com.github.phantomthief.pool.Pool;
@@ -22,9 +21,8 @@ class LazyPool<T> implements Pool<T> {
     }
 
     @Override
-    public <V, X extends Throwable> V supply(Duration maxWait, ThrowableFunction<T, V, X> function)
-            throws X {
-        return factory.get().supply(maxWait, function);
+    public <V, X extends Throwable> V supply(ThrowableFunction<T, V, X> function) throws X {
+        return factory.get().supply(function);
     }
 
     @Override

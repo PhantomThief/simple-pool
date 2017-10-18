@@ -1,7 +1,5 @@
 package com.github.phantomthief.pool;
 
-import java.time.Duration;
-
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.github.phantomthief.util.ThrowableFunction;
 
@@ -11,23 +9,13 @@ import com.github.phantomthief.util.ThrowableFunction;
  */
 public interface Pool<T> extends AutoCloseable {
 
-    <V, X extends Throwable> V supply(Duration maxWait, ThrowableFunction<T, V, X> function)
-            throws X;
+    <V, X extends Throwable> V supply(ThrowableFunction<T, V, X> function) throws X;
 
-    default <V, X extends Throwable> V supply(ThrowableFunction<T, V, X> function) throws X {
-        return supply(null, function);
-    }
-
-    default <X extends Throwable> void run(Duration maxWait, ThrowableConsumer<T, X> consumer)
-            throws X {
-        supply(maxWait, obj -> {
+    default <X extends Throwable> void run(ThrowableConsumer<T, X> consumer) throws X {
+        supply(obj -> {
             consumer.accept(obj);
             return null;
         });
-    }
-
-    default <X extends Throwable> void run(ThrowableConsumer<T, X> consumer) throws X {
-        run(null, consumer);
     }
 
     @Override
