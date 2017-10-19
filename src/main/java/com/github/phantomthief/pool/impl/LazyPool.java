@@ -5,8 +5,8 @@ import static com.github.phantomthief.util.MoreSuppliers.lazy;
 import java.util.function.Supplier;
 
 import com.github.phantomthief.pool.Pool;
+import com.github.phantomthief.pool.Pooled;
 import com.github.phantomthief.util.MoreSuppliers.CloseableSupplier;
-import com.github.phantomthief.util.ThrowableFunction;
 
 /**
  * @author w.vela
@@ -21,8 +21,13 @@ class LazyPool<T> implements Pool<T> {
     }
 
     @Override
-    public <V, X extends Throwable> V supply(ThrowableFunction<T, V, X> function) throws X {
-        return factory.get().supply(function);
+    public Pooled<T> borrow() {
+        return factory.get().borrow();
+    }
+
+    @Override
+    public void returnObject(Pooled<T> pooled) {
+        factory.get().returnObject(pooled);
     }
 
     @Override

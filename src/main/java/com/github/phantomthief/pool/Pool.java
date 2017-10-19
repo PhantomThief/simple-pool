@@ -1,5 +1,7 @@
 package com.github.phantomthief.pool;
 
+import javax.annotation.Nonnull;
+
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.github.phantomthief.util.ThrowableFunction;
 
@@ -9,7 +11,14 @@ import com.github.phantomthief.util.ThrowableFunction;
  */
 public interface Pool<T> extends AutoCloseable {
 
-    <V, X extends Throwable> V supply(ThrowableFunction<T, V, X> function) throws X;
+    default <V, X extends Throwable> V supply(ThrowableFunction<T, V, X> function) throws X {
+        Pooled<T> pooled = borrow();
+        try {
+            return function.apply(pooled.get());
+        } finally {
+            returnObject(pooled);
+        }
+    }
 
     default <X extends Throwable> void run(ThrowableConsumer<T, X> consumer) throws X {
         supply(obj -> {
@@ -17,6 +26,17 @@ public interface Pool<T> extends AutoCloseable {
             return null;
         });
     }
+
+    /**
+     * better use {@link #supply} or {@link #run}
+     */
+    @Nonnull
+    Pooled<T> borrow();
+
+    /**
+     * must call exactly once after {@link #borrow} in pair
+     */
+    void returnObject(@Nonnull Pooled<T> pooled);
 
     @Override
     void close();

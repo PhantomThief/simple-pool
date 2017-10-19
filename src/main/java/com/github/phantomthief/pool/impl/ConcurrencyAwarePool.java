@@ -1,5 +1,6 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
@@ -30,9 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.phantomthief.pool.Pool;
+import com.github.phantomthief.pool.Pooled;
 import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.AdjustResult;
 import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.CurrentObject;
-import com.github.phantomthief.util.ThrowableFunction;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -120,12 +121,10 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
     }
 
     @Override
-    public <V, X extends Throwable> V supply(ThrowableFunction<T, V, X> function) throws X {
-        if (closed || currentAvailable.isEmpty()) {
-            throw new IllegalStateException("pool is closed.");
-        }
+    public Pooled<T> borrow() {
         CounterWrapper counterWrapper;
         do {
+            checkClosed();
             try {
                 counterWrapper = currentAvailable
                         .get(ThreadLocalRandom.current().nextInt(currentAvailable.size()));
@@ -136,10 +135,22 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
         } while (true);
 
         counterWrapper.concurrency.increment();
-        try {
-            return function.apply(counterWrapper.obj);
-        } finally {
-            counterWrapper.concurrency.decrement();
+        return counterWrapper;
+    }
+
+    private void checkClosed() {
+        if (closed || currentAvailable.isEmpty()) {
+            throw new IllegalStateException("pool is closed.");
+        }
+    }
+
+    @Override
+    public void returnObject(Pooled<T> pooled) {
+        checkNotNull(pooled);
+        if (pooled instanceof ConcurrencyAwarePool.CounterWrapper) {
+            ((CounterWrapper) pooled).concurrency.decrement();
+        } else {
+            logger.warn("invalid pooled object:{}", pooled);
         }
     }
 
@@ -167,7 +178,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
         }
     }
 
-    class CounterWrapper {
+    class CounterWrapper implements Pooled<T> {
 
         final T obj;
         final LongAdder concurrency = new LongAdder();
@@ -184,6 +195,11 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
             if (destroy != null) {
                 destroy.accept(obj);
             }
+        }
+
+        @Override
+        public T get() {
+            return obj;
         }
     }
 }
