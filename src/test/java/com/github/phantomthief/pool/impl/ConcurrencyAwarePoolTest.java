@@ -36,6 +36,7 @@ public class ConcurrencyAwarePoolTest {
 
     private Set<Executor> executorSet = new CopyOnWriteArraySet<>();
     private int maxCount;
+    private volatile boolean closing;
 
     @Test
     public void test() {
@@ -45,6 +46,9 @@ public class ConcurrencyAwarePoolTest {
         double shrinkThreshold = 0.5D;
 
         newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            if (closing) {
+                return;
+            }
             try {
                 if (afterRun) {
                     assertTrue(executorSet.size() >= minIdleCount);
@@ -85,6 +89,7 @@ public class ConcurrencyAwarePoolTest {
         }
         shutdownAndAwaitTermination(executorService, 1, DAYS);
         logger.info("start closing...");
+        closing = true;
         pool.close();
         logger.info("after closed...");
         assertTrue(executorSet.size() == 0);

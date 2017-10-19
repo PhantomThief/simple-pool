@@ -54,5 +54,13 @@ public class SimpleConcurrencyAdjustStrategyTest {
         assertNotNull(adjust);
         assertTrue(adjust.getCreate() == 0);
         assertTrue(toEvict == adjust.getEvict().iterator().next());
+
+        adjust = strategy.adjust(of(new CurrentObject<>("test1", 1, currentTimeMillis())));
+        assertNull(adjust);
+
+        adjust = strategy.adjust(of( //
+                new CurrentObject<>("test1", 9, currentTimeMillis()),
+                new CurrentObject<>("test2", 10, currentTimeMillis())));
+        assertNull(adjust);
     }
 }
