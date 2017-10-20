@@ -1,11 +1,9 @@
 package com.github.phantomthief.pool.impl;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Collections.singleton;
 
-import java.time.Duration;
 import java.util.Collection;
 
 import javax.annotation.Nonnegative;
@@ -22,23 +20,15 @@ import com.google.common.math.IntMath;
  */
 class SimpleConcurrencyAdjustStrategy implements ConcurrencyAdjustStrategy {
 
-    private final Duration period;
     private final int extendThreshold;
     private final double shrinkThreshold;
 
-    SimpleConcurrencyAdjustStrategy(@Nonnull Duration period, @Nonnegative int extendThreshold,
+    SimpleConcurrencyAdjustStrategy(@Nonnegative int extendThreshold,
             @Nonnegative double shrinkThreshold) {
         checkArgument(extendThreshold > 0);
         checkArgument(shrinkThreshold > 0 && shrinkThreshold < 1);
-        this.period = checkNotNull(period);
         this.extendThreshold = extendThreshold;
         this.shrinkThreshold = shrinkThreshold;
-    }
-
-    @Nonnull
-    @Override
-    public Duration evaluatePeriod() {
-        return period;
     }
 
     @Nullable

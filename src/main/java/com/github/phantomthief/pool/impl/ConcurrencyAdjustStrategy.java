@@ -1,6 +1,5 @@
 package com.github.phantomthief.pool.impl;
 
-import java.time.Duration;
 import java.util.Collection;
 
 import javax.annotation.Nonnull;
@@ -13,9 +12,6 @@ import javax.annotation.Nullable;
 public interface ConcurrencyAdjustStrategy {
 
     AdjustResult NO_CHANGE = null;
-
-    @Nonnull
-    Duration evaluatePeriod();
 
     /**
      * @return {@link #NO_CHANGE} if no changed
@@ -36,6 +32,7 @@ public interface ConcurrencyAdjustStrategy {
             this.create = create;
         }
 
+        @Nullable
         Collection<ConcurrencyInfo> getEvict() {
             return evict;
         }

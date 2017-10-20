@@ -9,6 +9,8 @@
         <slf4j-api.version>1.7.21</slf4j-api.version>
         <guava.version>20.0</guava.version>
         <more-lambdas.version>0.1.7</more-lambdas.version>
+        <simple-failover.version>0.1.1</simple-failover.version>
+
         <junit.version>4.12</junit.version>
         <logback-classic.version>1.1.8</logback-classic.version>
 
@@ -65,6 +67,11 @@
             <groupId>com.github.phantomthief</groupId>
             <artifactId>more-lambdas</artifactId>
             <version>${more-lambdas.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.phantomthief</groupId>
+            <artifactId>simple-failover</artifactId>
+            <version>${simple-failover.version}</version>
         </dependency>
 
         <dependency>

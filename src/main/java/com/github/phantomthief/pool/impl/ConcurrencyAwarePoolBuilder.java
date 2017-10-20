@@ -27,13 +27,14 @@ public class ConcurrencyAwarePoolBuilder<T> {
 
     private static final Duration DEFAULT_EVALUATE_PERIOD = ofSeconds(1);
     private static final int DEFAULT_MIN_IDLE = 1;
-    private static final int DEFAULT_MAX_SIZE = Integer.MAX_VALUE;
+    private static final int DEFAULT_MAX_SIZE = 10000;
 
     ThrowableSupplier<T, Exception> factory;
     ThrowableConsumer<T, Exception> destroy;
     int minIdle = DEFAULT_MIN_IDLE;
     int maxSize = DEFAULT_MAX_SIZE;
     ConcurrencyAdjustStrategy strategy;
+    Duration evaluatePeriod = DEFAULT_EVALUATE_PERIOD;
 
     private ConcurrencyAwarePoolBuilder() {
     }
@@ -70,14 +71,12 @@ public class ConcurrencyAwarePoolBuilder<T> {
     }
 
     /**
-     * @param extendThreshold if average concurrency reach this threshold, the pool would extend.
-     * @param shrinkThreshold if average concurrency below extendThreshold*shrinkThreshold, the pool would shrink.
+     * default value is {@link #DEFAULT_EVALUATE_PERIOD}
      */
     @CheckReturnValue
-    public ConcurrencyAwarePoolBuilder<T> simpleThresholdStrategy(@Nonnegative int extendThreshold,
-            @Nonnegative double shrinkThreshold, @Nonnull Duration evaluatePeriod) {
-        return strategy(new SimpleConcurrencyAdjustStrategy(evaluatePeriod, extendThreshold,
-                shrinkThreshold));
+    public ConcurrencyAwarePoolBuilder<T> evaluatePeriod(@Nonnull Duration duration){
+        this.evaluatePeriod = duration;
+        return this;
     }
 
     /**
@@ -87,9 +86,12 @@ public class ConcurrencyAwarePoolBuilder<T> {
     @CheckReturnValue
     public ConcurrencyAwarePoolBuilder<T> simpleThresholdStrategy(@Nonnegative int extendThreshold,
             @Nonnegative double shrinkThreshold) {
-        return simpleThresholdStrategy(extendThreshold, shrinkThreshold, DEFAULT_EVALUATE_PERIOD);
+        return strategy(new SimpleConcurrencyAdjustStrategy(extendThreshold, shrinkThreshold));
     }
 
+    /**
+     * @throws IllegalArgumentException when maxSize is smaller than minIdle
+     */
     public Pool<T> build(@Nonnull ThrowableSupplier<T, Exception> value) {
         this.factory = checkNotNull(value);
         ensure();

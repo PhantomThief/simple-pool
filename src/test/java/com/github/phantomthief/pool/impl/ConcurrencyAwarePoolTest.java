@@ -2,6 +2,7 @@ package com.github.phantomthief.pool.impl;
 
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -64,6 +65,7 @@ public class ConcurrencyAwarePoolTest {
                 .destroy(Executor::close) //
                 .maxSize(maxCount) //
                 .minIdle(minIdleCount) //
+                .evaluatePeriod(ofSeconds(2)) //
                 .simpleThresholdStrategy(extendThreshold, shrinkThreshold) //
                 .build(Executor::new);
         logger.info("after create pool.");
@@ -83,7 +85,7 @@ public class ConcurrencyAwarePoolTest {
         assertTrue(executorSet.size() == minIdleCount);
 
         executorService = newFixedThreadPool(300);
-        for (int i = 0; i < 3000; i++) {
+        for (int i = 0; i < 6000; i++) {
             int j = i;
             executorService.execute(() -> runWithTest(pool, j));
         }

@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.LongAdder;
 
 import javax.annotation.Nonnull;
@@ -24,6 +22,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.phantomthief.failover.util.Weight;
 import com.github.phantomthief.pool.Pool;
 import com.github.phantomthief.pool.Pooled;
 import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.AdjustResult;
@@ -46,9 +45,12 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
 
     private final List<CounterWrapper> currentAvailable;
 
-    private final ScheduledExecutorService scheduledExecutor;
-    private final ScheduledFuture<?> scheduledFuture;
+    private final ScheduledExecutorService scheduledExecutor = newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder() //
+                    .setNameFormat("concurrency-pool-adjust-%d") //
+                    .build());
 
+    private volatile Weight<CounterWrapper> weight;
     private volatile boolean closed = false;
 
     /**
@@ -71,15 +73,13 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
                 throw new RuntimeException(e);
             }
         }
+        updateWeight();
 
+        long periodInMs = builder.evaluatePeriod.toMillis();
         ConcurrencyAdjustStrategy strategy = builder.strategy;
-        if (strategy != null) {
-            long periodInMs = strategy.evaluatePeriod().toMillis();
-            scheduledExecutor = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder() //
-                    .setNameFormat("concurrency-pool-adjust-%d") //
-                    .build());
-            scheduledFuture = scheduledExecutor.scheduleWithFixedDelay(() -> {
-                try {
+        scheduledExecutor.scheduleWithFixedDelay(() -> {
+            try {
+                if (strategy != null) {
                     AdjustResult adjust = strategy.adjust(currentAvailable);
                     if (adjust == null) {
                         return;
@@ -90,49 +90,52 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
                     }
 
                     if (adjust.getEvict() != null) {
-                        adjust.getEvict().stream() //
-                                .map(CounterWrapper.class::cast) //
-                                .limit(Math.max(0, currentAvailable.size() - minIdle)) //
-                                .forEach(wrapper -> {
-                                    currentAvailable.removeIf(it -> it == wrapper);
-                                    try {
-                                        wrapper.close();
-                                    } catch (Throwable e) {
-                                        logger.error("", e);
-                                    }
-                                });
+                        int toRemoveCount = Math.max(0, currentAvailable.size() - minIdle);
+                        for (ConcurrencyInfo item : adjust.getEvict()) {
+                            if (toRemoveCount <= 0) {
+                                break;
+                            }
+                            if (currentAvailable.removeIf(it -> it == item)) {
+                                toRemoveCount--;
+                                CounterWrapper.class.cast(item).close();
+                            }
+                        }
                     }
-                } catch (Throwable e) {
-                    logger.error("", e);
                 }
-            }, periodInMs, periodInMs, MILLISECONDS);
-        } else {
-            scheduledFuture = null;
-            scheduledExecutor = null;
+            } catch (Throwable e) {
+                logger.error("", e);
+            } finally {
+                updateWeight();
+            }
+        }, periodInMs, periodInMs, MILLISECONDS);
+    }
+
+    private void updateWeight() {
+        int sum = currentAvailable.stream().mapToInt(CounterWrapper::currentConcurrency).sum();
+        Weight<CounterWrapper> thisWeight = new Weight<>();
+        for (CounterWrapper item : currentAvailable) {
+            thisWeight.add(item, Math.max(1, sum - item.currentConcurrency()));
         }
+        weight = thisWeight;
     }
 
     @Nonnull
     @Override
     public Pooled<T> borrow() {
+        checkClosed();
         CounterWrapper counterWrapper;
-        do {
-            checkClosed();
-            try {
-                counterWrapper = currentAvailable
-                        .get(ThreadLocalRandom.current().nextInt(currentAvailable.size()));
-                break;
-            } catch (IndexOutOfBoundsException e) {
-                // ignore, for fast, do it without lock, retry if failed on concurrent modification.
-            }
-        } while (true);
-
+        try {
+            counterWrapper = weight.get();
+        } catch (NullPointerException e) {
+            throw new IllegalStateException("pool is closed.");
+        }
+        assert counterWrapper != null;
         counterWrapper.concurrency.increment();
         return counterWrapper;
     }
 
     private void checkClosed() {
-        if (closed || currentAvailable.isEmpty()) {
+        if (closed || weight == null) {
             throw new IllegalStateException("pool is closed.");
         }
     }
@@ -149,10 +152,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
 
     @Override
     public void close() {
-        if (scheduledFuture != null) {
-            scheduledFuture.cancel(true);
-            shutdownAndAwaitTermination(scheduledExecutor, 1, DAYS);
-        }
+        shutdownAndAwaitTermination(scheduledExecutor, 1, DAYS);
         Iterator<CounterWrapper> iterator = currentAvailable.iterator();
         Throwable toThrow = null;
         while (iterator.hasNext()) {
@@ -165,6 +165,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
             }
         }
         closed = true;
+        weight = null;
         if (toThrow != null) {
             throwIfUnchecked(toThrow);
             throw new RuntimeException(toThrow);
@@ -176,10 +177,11 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
         final T obj;
         final LongAdder concurrency = new LongAdder();
 
-        CounterWrapper(T obj) {
-            this.obj = obj;
+        CounterWrapper(@Nonnull T obj) {
+            this.obj = checkNotNull(obj);
         }
 
+        @Nonnull
         @Override
         public T get() {
             return obj;

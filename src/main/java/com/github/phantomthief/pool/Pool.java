@@ -29,6 +29,8 @@ public interface Pool<T> extends AutoCloseable {
 
     /**
      * better use {@link #supply} or {@link #run}
+     *
+     * @throws IllegalStateException if pool was already closed.
      */
     @Nonnull
     Pooled<T> borrow();

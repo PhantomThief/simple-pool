@@ -4,6 +4,8 @@ import static com.github.phantomthief.util.MoreSuppliers.lazy;
 
 import java.util.function.Supplier;
 
+import javax.annotation.Nonnull;
+
 import com.github.phantomthief.pool.Pool;
 import com.github.phantomthief.pool.Pooled;
 import com.github.phantomthief.util.MoreSuppliers.CloseableSupplier;
@@ -20,13 +22,14 @@ class LazyPool<T> implements Pool<T> {
         this.factory = lazy(factory);
     }
 
+    @Nonnull
     @Override
     public Pooled<T> borrow() {
         return factory.get().borrow();
     }
 
     @Override
-    public void returnObject(Pooled<T> pooled) {
+    public void returnObject(@Nonnull Pooled<T> pooled) {
         factory.get().returnObject(pooled);
     }
 

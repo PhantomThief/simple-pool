@@ -1,7 +1,6 @@
 package com.github.phantomthief.pool.impl;
 
 import static com.google.common.collect.ImmutableSet.of;
-import static java.time.Duration.ofSeconds;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -18,8 +17,7 @@ public class SimpleConcurrencyAdjustStrategyTest {
 
     @Test
     public void testAdjust() {
-        SimpleConcurrencyAdjustStrategy strategy = new SimpleConcurrencyAdjustStrategy(ofSeconds(1),
-                10, 0.5);
+        SimpleConcurrencyAdjustStrategy strategy = new SimpleConcurrencyAdjustStrategy(10, 0.5);
         // heavy to expend
         AdjustResult adjust = strategy.adjust(of(new MyConcurrencyInfo(20)));
         assertNotNull(adjust);
@@ -32,9 +30,10 @@ public class SimpleConcurrencyAdjustStrategyTest {
                 toEvict));
         assertNotNull(adjust);
         assertTrue(adjust.getCreate() == 0);
+        assertNotNull(adjust.getEvict());
         assertTrue(toEvict == adjust.getEvict().iterator().next());
 
-        strategy = new SimpleConcurrencyAdjustStrategy(ofSeconds(1), 10, 0.9);
+        strategy = new SimpleConcurrencyAdjustStrategy( 10, 0.9);
         adjust = strategy.adjust(of( //
                 new MyConcurrencyInfo(9), //
                 new MyConcurrencyInfo(9), //
@@ -50,6 +49,7 @@ public class SimpleConcurrencyAdjustStrategyTest {
         ));
         assertNotNull(adjust);
         assertTrue(adjust.getCreate() == 0);
+        assertNotNull(adjust.getEvict());
         assertTrue(toEvict == adjust.getEvict().iterator().next());
 
         adjust = strategy.adjust(of(new MyConcurrencyInfo(1)));
