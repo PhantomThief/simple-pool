@@ -22,8 +22,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -34,6 +32,8 @@ import com.github.phantomthief.pool.Pool;
 import com.github.phantomthief.pool.Pooled;
 import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.AdjustResult;
 import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.CurrentObject;
+import com.github.phantomthief.util.ThrowableConsumer;
+import com.github.phantomthief.util.ThrowableSupplier;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -47,7 +47,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(ConcurrencyAwarePool.class);
 
-    private final Consumer<T> destroy;
+    private final ThrowableConsumer<T, Throwable> destroy;
 
     private final List<CounterWrapper> currentAvailable;
 
@@ -62,14 +62,19 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
     ConcurrencyAwarePool(ConcurrencyAwarePoolBuilder<T> builder) {
         this.destroy = builder.destroy;
 
-        Supplier<T> factory = builder.factory;
+        ThrowableSupplier<T, Throwable> factory = builder.factory;
         int minIdle = builder.minIdle;
         int maxSize = builder.maxSize;
 
         currentAvailable = new ArrayList<>(maxSize);
 
         for (int i = 0; i < minIdle; i++) {
-            currentAvailable.add(new CounterWrapper(factory.get()));
+            try {
+                currentAvailable.add(new CounterWrapper(factory.get()));
+            } catch (Throwable e) {
+                throwIfUnchecked(e);
+                throw new RuntimeException(e);
+            }
         }
 
         ConcurrencyAdjustStrategy<T> strategy = builder.strategy;
@@ -193,7 +198,12 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
                 sleepUninterruptibly(1, SECONDS);
             }
             if (destroy != null) {
-                destroy.accept(obj);
+                try {
+                    destroy.accept(obj);
+                } catch (Throwable e) {
+                    throwIfUnchecked(e);
+                    throw new RuntimeException(e);
+                }
             }
         }
 

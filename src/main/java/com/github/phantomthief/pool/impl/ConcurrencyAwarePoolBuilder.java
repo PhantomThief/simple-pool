@@ -5,8 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.time.Duration.ofSeconds;
 
 import java.time.Duration;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
@@ -16,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.phantomthief.pool.Pool;
+import com.github.phantomthief.util.ThrowableConsumer;
+import com.github.phantomthief.util.ThrowableSupplier;
 
 /**
  * @author w.vela
@@ -29,8 +29,8 @@ public class ConcurrencyAwarePoolBuilder<T> {
     private static final int DEFAULT_MIN_IDLE = 1;
     private static final int DEFAULT_MAX_SIZE = Integer.MAX_VALUE;
 
-    Supplier<T> factory;
-    Consumer<T> destroy;
+    ThrowableSupplier<T, Throwable> factory;
+    ThrowableConsumer<T, Throwable> destroy;
     int minIdle = DEFAULT_MIN_IDLE;
     int maxSize = DEFAULT_MAX_SIZE;
     ConcurrencyAdjustStrategy<T> strategy;
@@ -44,7 +44,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
     }
 
     @CheckReturnValue
-    public ConcurrencyAwarePoolBuilder<T> destroy(@Nonnull Consumer<T> value) {
+    public ConcurrencyAwarePoolBuilder<T> destroy(@Nonnull ThrowableConsumer<T, Throwable> value) {
         this.destroy = checkNotNull(value);
         return this;
     }
@@ -90,7 +90,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
         return simpleThresholdStrategy(extendThreshold, shrinkThreshold, DEFAULT_EVALUATE_PERIOD);
     }
 
-    public Pool<T> build(@Nonnull Supplier<T> value) {
+    public Pool<T> build(@Nonnull ThrowableSupplier<T, Throwable> value) {
         this.factory = checkNotNull(value);
         ensure();
         return new LazyPool<>(() -> new ConcurrencyAwarePool<>(this));
