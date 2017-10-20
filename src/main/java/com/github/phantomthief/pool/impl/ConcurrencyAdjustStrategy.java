@@ -26,7 +26,7 @@ public interface ConcurrencyAdjustStrategy<T> {
      * @return {@link #noChange()} if no changed
      */
     @Nullable
-    AdjustResult<T> adjust(@Nonnull Set<CurrentObject<T>> current);
+    AdjustResult<T> adjust(@Nonnull Set<CurrentObject<T>> current) throws Throwable;
 
     class AdjustResult<T> {
 
