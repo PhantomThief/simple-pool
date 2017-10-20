@@ -29,11 +29,11 @@ public class ConcurrencyAwarePoolBuilder<T> {
     private static final int DEFAULT_MIN_IDLE = 1;
     private static final int DEFAULT_MAX_SIZE = Integer.MAX_VALUE;
 
-    ThrowableSupplier<T, Throwable> factory;
-    ThrowableConsumer<T, Throwable> destroy;
+    ThrowableSupplier<T, Exception> factory;
+    ThrowableConsumer<T, Exception> destroy;
     int minIdle = DEFAULT_MIN_IDLE;
     int maxSize = DEFAULT_MAX_SIZE;
-    ConcurrencyAdjustStrategy<T> strategy;
+    ConcurrencyAdjustStrategy strategy;
 
     private ConcurrencyAwarePoolBuilder() {
     }
@@ -44,7 +44,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
     }
 
     @CheckReturnValue
-    public ConcurrencyAwarePoolBuilder<T> destroy(@Nonnull ThrowableConsumer<T, Throwable> value) {
+    public ConcurrencyAwarePoolBuilder<T> destroy(@Nonnull ThrowableConsumer<T, Exception> value) {
         this.destroy = checkNotNull(value);
         return this;
     }
@@ -64,7 +64,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
     }
 
     @CheckReturnValue
-    public ConcurrencyAwarePoolBuilder<T> strategy(@Nonnull ConcurrencyAdjustStrategy<T> strategy) {
+    public ConcurrencyAwarePoolBuilder<T> strategy(@Nonnull ConcurrencyAdjustStrategy strategy) {
         this.strategy = checkNotNull(strategy);
         return this;
     }
@@ -76,7 +76,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
     @CheckReturnValue
     public ConcurrencyAwarePoolBuilder<T> simpleThresholdStrategy(@Nonnegative int extendThreshold,
             @Nonnegative double shrinkThreshold, @Nonnull Duration evaluatePeriod) {
-        return strategy(new SimpleConcurrencyAdjustStrategy<>(evaluatePeriod, extendThreshold,
+        return strategy(new SimpleConcurrencyAdjustStrategy(evaluatePeriod, extendThreshold,
                 shrinkThreshold));
     }
 
@@ -90,7 +90,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
         return simpleThresholdStrategy(extendThreshold, shrinkThreshold, DEFAULT_EVALUATE_PERIOD);
     }
 
-    public Pool<T> build(@Nonnull ThrowableSupplier<T, Throwable> value) {
+    public Pool<T> build(@Nonnull ThrowableSupplier<T, Exception> value) {
         this.factory = checkNotNull(value);
         ensure();
         return new LazyPool<>(() -> new ConcurrencyAwarePool<>(this));

@@ -5,24 +5,20 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.lang.Math.min;
-import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.LongAdder;
 
+import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.slf4j.Logger;
@@ -31,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import com.github.phantomthief.pool.Pool;
 import com.github.phantomthief.pool.Pooled;
 import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.AdjustResult;
-import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.CurrentObject;
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.github.phantomthief.util.ThrowableSupplier;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -47,7 +42,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(ConcurrencyAwarePool.class);
 
-    private final ThrowableConsumer<T, Throwable> destroy;
+    private final ThrowableConsumer<T, Exception> destroy;
 
     private final List<CounterWrapper> currentAvailable;
 
@@ -62,7 +57,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
     ConcurrencyAwarePool(ConcurrencyAwarePoolBuilder<T> builder) {
         this.destroy = builder.destroy;
 
-        ThrowableSupplier<T, Throwable> factory = builder.factory;
+        ThrowableSupplier<T, Exception> factory = builder.factory;
         int minIdle = builder.minIdle;
         int maxSize = builder.maxSize;
 
@@ -77,7 +72,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
             }
         }
 
-        ConcurrencyAdjustStrategy<T> strategy = builder.strategy;
+        ConcurrencyAdjustStrategy strategy = builder.strategy;
         if (strategy != null) {
             long periodInMs = strategy.evaluatePeriod().toMillis();
             scheduledExecutor = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder() //
@@ -85,8 +80,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
                     .build());
             scheduledFuture = scheduledExecutor.scheduleWithFixedDelay(() -> {
                 try {
-                    Map<CurrentObject<T>, CounterWrapper> map = copyCurrent();
-                    AdjustResult<T> adjust = strategy.adjust(map.keySet());
+                    AdjustResult adjust = strategy.adjust(currentAvailable);
                     if (adjust == null) {
                         return;
                     }
@@ -97,14 +91,12 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
 
                     if (adjust.getEvict() != null) {
                         adjust.getEvict().stream() //
-                                .map(map::get) //
-                                .filter(Objects::nonNull) //
-                                .distinct() //
+                                .map(CounterWrapper.class::cast) //
                                 .limit(Math.max(0, currentAvailable.size() - minIdle)) //
                                 .forEach(wrapper -> {
                                     currentAvailable.removeIf(it -> it == wrapper);
                                     try {
-                                        wrapper.shutdownAndAwaitTermination();
+                                        wrapper.close();
                                     } catch (Throwable e) {
                                         logger.error("", e);
                                     }
@@ -120,11 +112,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
         }
     }
 
-    private Map<CurrentObject<T>, CounterWrapper> copyCurrent() {
-        return currentAvailable.stream() //
-                .collect(toMap(CurrentObject::new, identity()));
-    }
-
+    @Nonnull
     @Override
     public Pooled<T> borrow() {
         CounterWrapper counterWrapper;
@@ -150,7 +138,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
     }
 
     @Override
-    public void returnObject(Pooled<T> pooled) {
+    public void returnObject(@Nonnull Pooled<T> pooled) {
         checkNotNull(pooled);
         if (pooled instanceof ConcurrencyAwarePool.CounterWrapper) {
             ((CounterWrapper) pooled).concurrency.decrement();
@@ -166,50 +154,53 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
             shutdownAndAwaitTermination(scheduledExecutor, 1, DAYS);
         }
         Iterator<CounterWrapper> iterator = currentAvailable.iterator();
-        Throwable throwable = null;
+        Throwable toThrow = null;
         while (iterator.hasNext()) {
             CounterWrapper wrapper = iterator.next();
             iterator.remove();
             try {
-                wrapper.shutdownAndAwaitTermination();
+                wrapper.close();
             } catch (Throwable e) {
-                throwable = e;
+                toThrow = e;
             }
         }
         closed = true;
-        if (throwable != null) {
-            throwIfUnchecked(throwable);
-            throw new RuntimeException(throwable);
+        if (toThrow != null) {
+            throwIfUnchecked(toThrow);
+            throw new RuntimeException(toThrow);
         }
     }
 
-    class CounterWrapper implements Pooled<T> {
+    class CounterWrapper implements Pooled<T>, AutoCloseable, ConcurrencyInfo {
 
         final T obj;
         final LongAdder concurrency = new LongAdder();
-        final long createTime = currentTimeMillis();
 
         CounterWrapper(T obj) {
             this.obj = obj;
         }
 
-        void shutdownAndAwaitTermination() {
+        @Override
+        public T get() {
+            return obj;
+        }
+
+        /**
+         * would blocking until no using.
+         */
+        @Override
+        public void close() throws Exception {
             while (concurrency.intValue() > 0) {
                 sleepUninterruptibly(1, SECONDS);
             }
             if (destroy != null) {
-                try {
-                    destroy.accept(obj);
-                } catch (Throwable e) {
-                    throwIfUnchecked(e);
-                    throw new RuntimeException(e);
-                }
+                destroy.accept(obj);
             }
         }
 
         @Override
-        public T get() {
-            return obj;
+        public int currentConcurrency() {
+            return concurrency.intValue();
         }
     }
 }

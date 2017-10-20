@@ -1,13 +1,12 @@
 package com.github.phantomthief.pool.impl;
 
-import static com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.noChange;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Collections.singleton;
 
 import java.time.Duration;
-import java.util.Set;
+import java.util.Collection;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -21,7 +20,7 @@ import com.google.common.math.IntMath;
  * @author w.vela
  * Created on 2017-10-18.
  */
-class SimpleConcurrencyAdjustStrategy<T> implements ConcurrencyAdjustStrategy<T> {
+class SimpleConcurrencyAdjustStrategy implements ConcurrencyAdjustStrategy {
 
     private final Duration period;
     private final int extendThreshold;
@@ -44,33 +43,33 @@ class SimpleConcurrencyAdjustStrategy<T> implements ConcurrencyAdjustStrategy<T>
 
     @Nullable
     @Override
-    public AdjustResult<T> adjust(@Nonnull Set<CurrentObject<T>> current) {
+    public AdjustResult adjust(@Nonnull Collection<? extends ConcurrencyInfo> current) {
         int itemSize = current.size();
-        CurrentObject<T> minCurrentObject = null;
+        ConcurrencyInfo minConcurrencyInfo = null;
         int sumConcurrency = 0;
-        for (CurrentObject<T> object : current) {
-            sumConcurrency += object.getCurrentConcurrency();
-            if (minCurrentObject == null) {
-                minCurrentObject = object;
-            } else if (minCurrentObject.getCurrentConcurrency() > object.getCurrentConcurrency()) {
-                minCurrentObject = object;
+        for (ConcurrencyInfo object : current) {
+            sumConcurrency += object.currentConcurrency();
+            if (minConcurrencyInfo == null) {
+                minConcurrencyInfo = object;
+            } else if (minConcurrencyInfo.currentConcurrency() > object.currentConcurrency()) {
+                minConcurrencyInfo = object;
             }
         }
         int currentAvgConcurrency = IntMath.divide(sumConcurrency, itemSize, CEILING);
         if (currentAvgConcurrency > extendThreshold) {
-            return new AdjustResult<>(null, 1);
+            return new AdjustResult(null, 1);
         }
         if (shrinkThreshold * extendThreshold * itemSize < sumConcurrency) {
-            return noChange();
+            return NO_CHANGE;
         }
         if (itemSize <= 1) {
-            return noChange();
+            return NO_CHANGE;
         }
         int afterReduceAvgConcurrency = IntMath.divide(sumConcurrency, itemSize - 1, CEILING);
         if (extendThreshold > afterReduceAvgConcurrency) {
-            return new AdjustResult<>(singleton(minCurrentObject), 0);
+            return new AdjustResult(singleton(minConcurrencyInfo), 0);
         } else {
-            return noChange();
+            return NO_CHANGE;
         }
     }
 }
