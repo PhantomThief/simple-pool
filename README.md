@@ -11,7 +11,7 @@ A simple pool library for Java
 <dependency>
     <groupId>com.github.phantomthief</groupId>
     <artifactId>simple-pool</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.2</version>
 </dependency>
 ```
 
