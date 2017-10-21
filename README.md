@@ -3,6 +3,7 @@ simple-pool [![Build Status](https://travis-ci.org/PhantomThief/simple-pool.svg)
 
 A simple pool library for Java
 
+* support concurrency use for objects. 
 * jdk1.8 only
 
 ## Get Started
@@ -11,15 +12,16 @@ A simple pool library for Java
 <dependency>
     <groupId>com.github.phantomthief</groupId>
     <artifactId>simple-pool</artifactId>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
 </dependency>
 ```
 
 ```Java	
-Pool<Executor> pool = ConcurrencyAwarePoolBuilder.<Executor> builder() //
+Pool<MyObject> pool = ConcurrencyAwarePoolBuilder.<MyObject> builder() //
                 .destroy(MyObject::close) //
                 .maxSize(30) //
                 .minIdle(1) //
+                .evaluatePeriod(ofSeconds(2)) //
                 .simpleThresholdStrategy(10, 0.8) //
                 .build(MyObject::new);
 
