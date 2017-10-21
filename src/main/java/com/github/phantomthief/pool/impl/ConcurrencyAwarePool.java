@@ -80,7 +80,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
         long periodInMs = builder.evaluatePeriod.toMillis();
         ConcurrencyAdjustStrategy strategy = builder.strategy;
         scheduledExecutor.scheduleWithFixedDelay(() -> {
-            List<CounterWrapper> toClosed = new ArrayList<>();
+            List<CounterWrapper> toClosed = null;
             try {
                 if (strategy != null) {
                     AdjustResult adjust = strategy.adjust(currentAvailable);
@@ -100,6 +100,9 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
                             }
                             if (currentAvailable.removeIf(it -> it == item)) {
                                 toRemoveCount--;
+                                if (toClosed == null) {
+                                    toClosed = new ArrayList<>();
+                                }
                                 toClosed.add(CounterWrapper.class.cast(item));
                             }
                         }
@@ -115,6 +118,9 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
     }
 
     private void closePending(List<CounterWrapper> toClosed) {
+        if (toClosed == null) {
+            return;
+        }
         for (CounterWrapper item : toClosed) {
             cleanupExecutor().execute(() -> {
                 try {
