@@ -52,8 +52,9 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
                     .setNameFormat("concurrency-pool-adjust-%d") //
                     .build());
 
+    // weight is always non-null except for pool is closed.
     private volatile Weight<CounterWrapper> weight;
-    private volatile boolean closed = false;
+    private volatile boolean closing = false;
 
     /**
      * see {@link ConcurrencyAwarePoolBuilder#builder()}
@@ -144,7 +145,9 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
     @Nonnull
     @Override
     public Pooled<T> borrow() {
-        checkClosed();
+        if (closing) {
+            throw new IllegalStateException("pool is closed.");
+        }
         CounterWrapper counterWrapper;
         try {
             counterWrapper = weight.get();
@@ -154,12 +157,6 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
         assert counterWrapper != null;
         counterWrapper.enter();
         return counterWrapper;
-    }
-
-    private void checkClosed() {
-        if (closed || weight == null) {
-            throw new IllegalStateException("pool is closed.");
-        }
     }
 
     @Override
@@ -174,6 +171,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
 
     @Override
     public void close() {
+        closing = true;
         shutdownAndAwaitTermination(scheduledExecutor, 1, DAYS);
         Iterator<CounterWrapper> iterator = currentAvailable.iterator();
         Throwable toThrow = null;
@@ -186,7 +184,6 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
                 toThrow = e;
             }
         }
-        closed = true;
         weight = null;
         if (toThrow != null) {
             throwIfUnchecked(toThrow);
