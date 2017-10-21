@@ -1,5 +1,6 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.github.phantomthief.pool.impl.SharedResource.cleanupExecutor;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
@@ -8,6 +9,7 @@ import static java.lang.Math.min;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.ArrayList;
@@ -107,15 +109,21 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
                 logger.error("", e);
             } finally {
                 updateWeight(); // after this call, no more new requests would be reached.
-                for (CounterWrapper item : toClosed) {
-                    try {
-                        item.close();
-                    } catch (Throwable e) {
-                        logger.error("", e);
-                    }
-                }
+                closePending(toClosed);
             }
         }, periodInMs, periodInMs, MILLISECONDS);
+    }
+
+    private void closePending(List<CounterWrapper> toClosed) {
+        for (CounterWrapper item : toClosed) {
+            cleanupExecutor().execute(() -> {
+                try {
+                    item.close();
+                } catch (Throwable e) {
+                    logger.error("", e);
+                }
+            });
+        }
     }
 
     private void updateWeight() {
@@ -138,7 +146,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
             throw new IllegalStateException("pool is closed.");
         }
         assert counterWrapper != null;
-        counterWrapper.concurrency.increment();
+        counterWrapper.enter();
         return counterWrapper;
     }
 
@@ -152,7 +160,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
     public void returnObject(@Nonnull Pooled<T> pooled) {
         checkNotNull(pooled);
         if (pooled instanceof ConcurrencyAwarePool.CounterWrapper) {
-            ((CounterWrapper) pooled).concurrency.decrement();
+            ((CounterWrapper) pooled).leave();
         } else {
             logger.warn("invalid pooled object:{}", pooled);
         }
@@ -180,10 +188,12 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
         }
     }
 
-    class CounterWrapper implements Pooled<T>, AutoCloseable, ConcurrencyInfo {
+    private class CounterWrapper implements Pooled<T>, AutoCloseable, ConcurrencyInfo {
 
-        final T obj;
-        final LongAdder concurrency = new LongAdder();
+        private final T obj;
+        private final LongAdder concurrency = new LongAdder();
+
+        private volatile boolean closing = false;
 
         CounterWrapper(@Nonnull T obj) {
             this.obj = checkNotNull(obj);
@@ -200,8 +210,11 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
          */
         @Override
         public void close() throws Exception {
-            while (concurrency.intValue() > 0) {
-                sleepUninterruptibly(1, SECONDS);
+            closing = true;
+            synchronized (concurrency) {
+                while (concurrency.intValue() > 0) {
+                    concurrency.wait(MINUTES.toMillis(1));
+                }
             }
             if (destroy != null) {
                 // sleep for one more second for safety.
@@ -213,6 +226,19 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
         @Override
         public int currentConcurrency() {
             return concurrency.intValue();
+        }
+
+        private void enter() {
+            concurrency.increment();
+        }
+
+        private void leave() {
+            concurrency.decrement();
+            if (closing) {
+                synchronized (concurrency) {
+                    concurrency.notifyAll();
+                }
+            }
         }
     }
 }
