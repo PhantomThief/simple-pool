@@ -65,7 +65,7 @@ public class ConcurrencyAwarePoolTest {
                 .destroy(Executor::close) //
                 .maxSize(maxCount) //
                 .minIdle(minIdleCount) //
-                .evaluatePeriod(ofSeconds(2)) //
+                .evaluatePeriod(ofSeconds(1)) //
                 .simpleThresholdStrategy(extendThreshold, shrinkThreshold) //
                 .build(Executor::new);
         logger.info("after create pool.");
@@ -73,23 +73,31 @@ public class ConcurrencyAwarePoolTest {
         afterRun = true;
 
         ExecutorService executorService = newFixedThreadPool(60);
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 500; i++) {
             int j = i;
             executorService.execute(() -> runWithTest(pool, j));
         }
         logger.info("waiting closing...");
         shutdownAndAwaitTermination(executorService, 1, DAYS);
         logger.info("after 1 round.");
-        sleepUninterruptibly(30, SECONDS);
+        sleepUninterruptibly(15, SECONDS);
         logger.info("executor:{}", executorSet.size());
         assertTrue(executorSet.size() == minIdleCount);
 
         executorService = newFixedThreadPool(300);
-        for (int i = 0; i < 6000; i++) {
+        for (int i = 0; i < 3000; i++) {
             int j = i;
             executorService.execute(() -> runWithTest(pool, j));
         }
         shutdownAndAwaitTermination(executorService, 1, DAYS);
+
+        executorService = newFixedThreadPool(30);
+        for (int i = 0; i < 1000; i++) {
+            int j = i;
+            executorService.execute(() -> runWithTest(pool, j));
+        }
+        shutdownAndAwaitTermination(executorService, 1, DAYS);
+
         logger.info("start closing...");
         closing = true;
         pool.close();
