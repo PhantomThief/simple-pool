@@ -8,8 +8,9 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -17,8 +18,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +56,7 @@ public class ConcurrencyAwarePoolTest {
                     assertTrue(executorSet.size() >= minIdleCount);
                 }
                 assertTrue(executorSet.size() <= maxCount);
-                executorSet.forEach(Assert::assertNotNull);
+                executorSet.forEach(Assertions::assertNotNull);
             } catch (Throwable e) {
                 e.printStackTrace();
             }
@@ -103,6 +104,7 @@ public class ConcurrencyAwarePoolTest {
         pool.close();
         logger.info("after closed...");
         assertTrue(executorSet.size() == 0);
+        assertThrows(IllegalStateException.class, pool::borrow);
         logger.info("after 2 round.");
     }
 
