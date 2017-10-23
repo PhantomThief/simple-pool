@@ -30,7 +30,7 @@ import com.google.common.util.concurrent.UncheckedTimeoutException;
  * @author w.vela
  * Created on 09/09/2016.
  */
-public class ConcurrencyAwarePoolTest {
+class ConcurrencyAwarePoolTest {
 
     private static final Logger logger = LoggerFactory.getLogger(ConcurrencyAwarePoolTest.class);
     private volatile boolean afterRun = false;
@@ -41,7 +41,7 @@ public class ConcurrencyAwarePoolTest {
     private volatile boolean closing;
 
     @Test
-    public void test() {
+    void test() {
         maxCount = 20;
         int extendThreshold = 10;
         int minIdleCount = 2;
@@ -62,7 +62,7 @@ public class ConcurrencyAwarePoolTest {
             }
         }, 50, 50, MILLISECONDS);
 
-        Pool<Executor> pool = ConcurrencyAwarePoolBuilder.<Executor> builder() //
+        Pool<Executor> pool = ConcurrencyAwarePool.<Executor> builder() //
                 .destroy(Executor::close) //
                 .maxSize(maxCount) //
                 .minIdle(minIdleCount) //
@@ -104,8 +104,18 @@ public class ConcurrencyAwarePoolTest {
         pool.close();
         logger.info("after closed...");
         assertTrue(executorSet.size() == 0);
-        assertThrows(IllegalStateException.class, pool::borrow);
         logger.info("after 2 round.");
+    }
+
+    @Test
+    void testIllegal() {
+        Pool<String> pool = ConcurrencyAwarePool.<String> builder() //
+                .build(() -> "test");
+        pool.run(s -> logger.info("{}", s));
+        pool.close();
+        assertThrows(IllegalStateException.class, pool::borrow);
+        assertThrows(IllegalArgumentException.class, () -> ConcurrencyAwarePool.<String> builder()
+                .minIdle(10).maxSize(5).build(() -> "test"));
     }
 
     private void runWithTest(Pool<Executor> pool, int j) {

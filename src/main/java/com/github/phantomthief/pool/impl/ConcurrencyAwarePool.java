@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.LongAdder;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -33,8 +34,6 @@ import com.github.phantomthief.util.ThrowableSupplier;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
- * 每个对象可以同时被使用n次
- *
  * @author w.vela
  * Created on 06/09/2016.
  */
@@ -57,7 +56,7 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
     private volatile boolean closing = false;
 
     /**
-     * see {@link ConcurrencyAwarePoolBuilder#builder()}
+     * see {@link ConcurrencyAwarePool#builder()}
      */
     ConcurrencyAwarePool(ConcurrencyAwarePoolBuilder<T> builder) {
         this.destroy = builder.destroy;
@@ -189,6 +188,11 @@ class ConcurrencyAwarePool<T> implements Pool<T> {
             throwIfUnchecked(toThrow);
             throw new RuntimeException(toThrow);
         }
+    }
+
+    @CheckReturnValue
+    public static <T> ConcurrencyAwarePoolBuilder<T> builder() {
+        return new ConcurrencyAwarePoolBuilder<>();
     }
 
     private class CounterWrapper implements Pooled<T>, AutoCloseable, ConcurrencyInfo {

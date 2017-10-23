@@ -36,12 +36,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
     ConcurrencyAdjustStrategy strategy;
     Duration evaluatePeriod = DEFAULT_EVALUATE_PERIOD;
 
-    private ConcurrencyAwarePoolBuilder() {
-    }
-
-    @CheckReturnValue
-    public static <T> ConcurrencyAwarePoolBuilder<T> builder() {
-        return new ConcurrencyAwarePoolBuilder<>();
+    ConcurrencyAwarePoolBuilder() {
     }
 
     @CheckReturnValue

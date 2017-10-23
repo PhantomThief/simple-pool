@@ -8,7 +8,7 @@
         <jsr305.version>3.0.2</jsr305.version>
         <slf4j-api.version>1.7.21</slf4j-api.version>
         <guava.version>20.0</guava.version>
-        <more-lambdas.version>0.1.7</more-lambdas.version>
+        <more-lambdas.version>0.1.11</more-lambdas.version>
         <simple-failover.version>0.1.1</simple-failover.version>
 
         <junit-jupiter-api.version>5.0.1</junit-jupiter-api.version>

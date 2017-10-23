@@ -19,7 +19,7 @@ class LazyPool<T> implements Pool<T> {
     private final CloseableSupplier<Pool<T>> factory;
 
     LazyPool(Supplier<Pool<T>> factory) {
-        this.factory = lazy(factory);
+        this.factory = lazy(factory, false);
     }
 
     @Nonnull
