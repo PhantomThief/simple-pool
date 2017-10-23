@@ -12,12 +12,12 @@ A simple pool library for Java
 <dependency>
     <groupId>com.github.phantomthief</groupId>
     <artifactId>simple-pool</artifactId>
-    <version>0.1.5</version>
+    <version>0.1.7</version>
 </dependency>
 ```
 
 ```Java	
-Pool<MyObject> pool = ConcurrencyAwarePoolBuilder.<MyObject> builder() //
+Pool<MyObject> pool = ConcurrencyAwarePool.<MyObject> builder() //
                 .destroy(MyObject::close) //
                 .maxSize(30) //
                 .minIdle(1) //
