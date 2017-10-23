@@ -38,7 +38,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * Created on 06/09/2016.
  */
 @ThreadSafe
-class ConcurrencyAwarePool<T> implements Pool<T> {
+public class ConcurrencyAwarePool<T> implements Pool<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(ConcurrencyAwarePool.class);
 
