@@ -13,10 +13,10 @@ import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.AdjustResult;
  * @author w.vela
  * Created on 2017-10-18.
  */
-public class SimpleConcurrencyAdjustStrategyTest {
+class SimpleConcurrencyAdjustStrategyTest {
 
     @Test
-    public void testAdjust() {
+    void testAdjust() {
         SimpleConcurrencyAdjustStrategy strategy = new SimpleConcurrencyAdjustStrategy(10, 0.5);
         // heavy to expend
         AdjustResult adjust = strategy.adjust(of(new MyConcurrencyInfo(20)));
