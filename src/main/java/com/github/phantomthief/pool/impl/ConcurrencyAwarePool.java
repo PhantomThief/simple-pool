@@ -60,6 +60,10 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
 
     private final Map<StatsKey<?>, Supplier<?>> stats;
 
+    // weight is always non-null except for pool is closed.
+    private volatile Weight<CounterWrapper> weight;
+    private volatile boolean closing = false;
+
     /**
      * see {@link ConcurrencyAwarePool#builder()}
      */
@@ -123,10 +127,6 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
 
         stats = buildStats();
     }
-
-    // weight is always non-null except for pool is closed.
-    private volatile Weight<CounterWrapper> weight;
-    private volatile boolean closing = false;
 
     private Map<StatsKey<?>, Supplier<?>> buildStats() {
         Map<StatsKey<?>, Supplier<?>> map = new HashMap<>();
