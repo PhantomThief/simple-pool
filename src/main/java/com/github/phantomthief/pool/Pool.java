@@ -1,6 +1,7 @@
 package com.github.phantomthief.pool;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.github.phantomthief.util.ThrowableFunction;
@@ -34,6 +35,9 @@ public interface Pool<T> extends AutoCloseable {
      */
     @Nonnull
     Pooled<T> borrow();
+
+    @Nullable
+    <V> V getStats(@Nonnull StatsKey<V> key);
 
     /**
      * must call exactly once after {@link #borrow} in pair

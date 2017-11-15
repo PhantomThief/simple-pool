@@ -6,6 +6,7 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.lang.Math.min;
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -13,8 +14,10 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -28,9 +31,11 @@ import org.slf4j.LoggerFactory;
 import com.github.phantomthief.failover.util.Weight;
 import com.github.phantomthief.pool.Pool;
 import com.github.phantomthief.pool.Pooled;
+import com.github.phantomthief.pool.StatsKey;
 import com.github.phantomthief.pool.impl.ConcurrencyAdjustStrategy.AdjustResult;
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.github.phantomthief.util.ThrowableSupplier;
+import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -42,6 +47,8 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(ConcurrencyAwarePool.class);
 
+    public static final StatsKey<Integer> CURRENT_COUNT = new StatsKey<>(Integer.class);
+
     private final ThrowableConsumer<T, Exception> destroy;
 
     private final List<CounterWrapper> currentAvailable;
@@ -51,9 +58,7 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
                     .setNameFormat("concurrency-pool-adjust-%d") //
                     .build());
 
-    // weight is always non-null except for pool is closed.
-    private volatile Weight<CounterWrapper> weight;
-    private volatile boolean closing = false;
+    private final Map<StatsKey<?>, Supplier<?>> stats;
 
     /**
      * see {@link ConcurrencyAwarePool#builder()}
@@ -115,6 +120,18 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
                 closePending(toClosed);
             }
         }, periodInMs, periodInMs, MILLISECONDS);
+
+        stats = buildStats();
+    }
+
+    // weight is always non-null except for pool is closed.
+    private volatile Weight<CounterWrapper> weight;
+    private volatile boolean closing = false;
+
+    private Map<StatsKey<?>, Supplier<?>> buildStats() {
+        Map<StatsKey<?>, Supplier<?>> map = new HashMap<>();
+        map.put(CURRENT_COUNT, currentAvailable::size);
+        return map;
     }
 
     private void closePending(List<CounterWrapper> toClosed) {
@@ -156,6 +173,15 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
         assert counterWrapper != null;
         counterWrapper.enter();
         return counterWrapper;
+    }
+
+    @Override
+    public <V> V getStats(@Nonnull StatsKey<V> key) {
+        checkNotNull(key);
+        return ofNullable(stats.get(key)) //
+                .map(Supplier::get) //
+                .map(obj -> key.getType().cast(obj)) //
+                .orElse(null);
     }
 
     @Override

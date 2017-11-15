@@ -5,9 +5,11 @@ import static com.github.phantomthief.util.MoreSuppliers.lazy;
 import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.github.phantomthief.pool.Pool;
 import com.github.phantomthief.pool.Pooled;
+import com.github.phantomthief.pool.StatsKey;
 import com.github.phantomthief.util.MoreSuppliers.CloseableSupplier;
 
 /**
@@ -26,6 +28,12 @@ class LazyPool<T> implements Pool<T> {
     @Override
     public Pooled<T> borrow() {
         return factory.get().borrow();
+    }
+
+    @Nullable
+    @Override
+    public <V> V getStats(@Nonnull StatsKey<V> key) {
+        return factory.map(pool -> pool.getStats(key)).orElse(null);
     }
 
     @Override

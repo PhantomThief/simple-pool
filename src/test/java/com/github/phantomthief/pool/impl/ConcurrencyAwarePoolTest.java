@@ -1,5 +1,6 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.github.phantomthief.pool.impl.ConcurrencyAwarePool.CURRENT_COUNT;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.time.Duration.ofSeconds;
@@ -78,6 +79,7 @@ class ConcurrencyAwarePoolTest {
             int j = i;
             executorService.execute(() -> runWithTest(pool, j));
         }
+        logger.info("current count:{}", pool.getStats(CURRENT_COUNT));
         logger.info("waiting closing...");
         shutdownAndAwaitTermination(executorService, 1, DAYS);
         logger.info("after 1 round.");
