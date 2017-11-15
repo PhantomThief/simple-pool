@@ -14,7 +14,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.ConcurrentModificationException;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,8 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(ConcurrencyAwarePool.class);
 
-    public static final StatsKey<Integer> CURRENT_COUNT = new StatsKey<>(Integer.class);
+    public static final StatsKey<Integer> CURRENT_COUNT = new SimpleStatsKey<>(Integer.class);
+    public static final StatsKey<Integer> CURRENT_CONCURRENCY = new SimpleStatsKey<>(Integer.class);
 
     private final ThrowableConsumer<T, Exception> destroy;
 
@@ -129,9 +131,20 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
     }
 
     private Map<StatsKey<?>, Supplier<?>> buildStats() {
-        Map<StatsKey<?>, Supplier<?>> map = new HashMap<>();
+        Map<StatsKey<?>, Supplier<?>> map = new IdentityHashMap<>();
         map.put(CURRENT_COUNT, currentAvailable::size);
+        map.put(CURRENT_CONCURRENCY, this::estimateCurrentConcurrency);
         return map;
+    }
+
+    private int estimateCurrentConcurrency() {
+        do {
+            try {
+                return currentAvailable.stream().mapToInt(CounterWrapper::currentConcurrency).sum();
+            } catch (ConcurrentModificationException e) {
+                // ignore and retry.
+            }
+        } while (true);
     }
 
     private void closePending(List<CounterWrapper> toClosed) {
@@ -272,6 +285,21 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
                     concurrency.notifyAll();
                 }
             }
+        }
+    }
+
+    private static class SimpleStatsKey<V> implements StatsKey<V> {
+
+        private final Class<V> type;
+
+        private SimpleStatsKey(Class<V> type) {
+            this.type = type;
+        }
+
+        @Nonnull
+        @Override
+        public Class<V> getType() {
+            return type;
         }
     }
 }
