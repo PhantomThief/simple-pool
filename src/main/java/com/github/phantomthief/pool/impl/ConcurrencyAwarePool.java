@@ -191,10 +191,15 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
     @Override
     public <V> V getStats(@Nonnull StatsKey<V> key) {
         checkNotNull(key);
-        return ofNullable(stats.get(key)) //
-                .map(Supplier::get) //
-                .map(obj -> key.getType().cast(obj)) //
-                .orElse(null);
+        if (key instanceof SimpleStatsKey) {
+            SimpleStatsKey<V> simpleStatsKey = (SimpleStatsKey<V>) key;
+            return ofNullable(stats.get(key)) //
+                    .map(Supplier::get) //
+                    .map(simpleStatsKey::cast) //
+                    .orElse(null);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -292,14 +297,12 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
 
         private final Class<V> type;
 
-        private SimpleStatsKey(Class<V> type) {
+        SimpleStatsKey(Class<V> type) {
             this.type = type;
         }
-
-        @Nonnull
-        @Override
-        public Class<V> getType() {
-            return type;
+        
+        V cast(Object obj) {
+            return type.cast(obj);
         }
     }
 }
