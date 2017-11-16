@@ -12,7 +12,7 @@ A simple pool library for Java
 <dependency>
     <groupId>com.github.phantomthief</groupId>
     <artifactId>simple-pool</artifactId>
-    <version>0.1.8</version>
+    <version>0.1.9</version>
 </dependency>
 ```
 
