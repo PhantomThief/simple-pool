@@ -24,9 +24,9 @@ class SimpleConcurrencyAdjustStrategyTest {
         assertTrue(adjust.getCreate() == 1);
 
         // idle to shrink
-        ConcurrencyInfo toEvict = new MyConcurrencyInfo(4);
+        ConcurrencyInfo toEvict = new MyConcurrencyInfo(3);
         adjust = strategy.adjust(of( //
-                new MyConcurrencyInfo(5), //
+                new MyConcurrencyInfo(4), //
                 toEvict));
         assertNotNull(adjust);
         assertTrue(adjust.getCreate() == 0);
