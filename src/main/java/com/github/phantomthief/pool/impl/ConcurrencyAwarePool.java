@@ -164,10 +164,18 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
         if (closing) {
             throw new IllegalStateException("pool is closed.");
         }
-        CounterWrapper counterWrapper = currentAvailable.stream() //
-                .filter(it -> !it.isClosing()) //
-                .min(comparingInt(CounterWrapper::currentConcurrency)) //
-                .orElseThrow(() -> new IllegalStateException("pool is closed."));
+        CounterWrapper counterWrapper;
+        do {
+            try {
+                counterWrapper = currentAvailable.stream() //
+                        .filter(it -> !it.isClosing()) //
+                        .min(comparingInt(CounterWrapper::currentConcurrency)) //
+                        .orElseThrow(() -> new IllegalStateException("pool is closed."));
+                break;
+            } catch (ConcurrentModificationException e) {
+                // ignore the exception
+            }
+        } while (true);
         counterWrapper.enter();
         return counterWrapper;
     }
