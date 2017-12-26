@@ -165,6 +165,7 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
             throw new IllegalStateException("pool is closed.");
         }
         CounterWrapper counterWrapper = currentAvailable.stream() //
+                .filter(it -> !it.isClosing()) //
                 .min(comparingInt(CounterWrapper::currentConcurrency)) //
                 .orElseThrow(() -> new IllegalStateException("pool is closed."));
         counterWrapper.enter();
@@ -256,13 +257,17 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
             }
         }
 
+        private boolean isClosing() {
+            return closing;
+        }
+
         @Override
         public int currentConcurrency() {
             return concurrency.intValue();
         }
 
         private void enter() {
-            concurrency.incrementAndGet();
+            concurrency.getAndIncrement();
         }
 
         private void leave() {
@@ -282,7 +287,7 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
         SimpleStatsKey(Class<V> type) {
             this.type = type;
         }
-        
+
         V cast(Object obj) {
             return type.cast(obj);
         }
