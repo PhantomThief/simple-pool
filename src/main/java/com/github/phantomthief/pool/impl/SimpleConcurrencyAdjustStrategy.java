@@ -11,6 +11,7 @@ import java.util.List;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  * extend or shrink only one item on each cycle.
@@ -18,15 +19,26 @@ import javax.annotation.Nullable;
  * @author w.vela
  * Created on 2017-10-18.
  */
+@NotThreadSafe
 class SimpleConcurrencyAdjustStrategy implements ConcurrencyAdjustStrategy {
 
     private final int extendThreshold;
     private final double shrinkThreshold;
+    private final int continuousExtendThreshold;
+    private final int continuousShrinkThreshold;
+
+    private int continuousExtendCount;
+    private int continuousShrinkCount;
 
     SimpleConcurrencyAdjustStrategy(@Nonnegative int extendThreshold,
-            @Nonnegative double shrinkThreshold) {
+            @Nonnegative double shrinkThreshold, @Nonnegative int continuousExtendThreshold,
+            @Nonnegative int continuousShrinkThreshold) {
+        checkArgument(continuousExtendThreshold > 0);
+        checkArgument(continuousShrinkThreshold > 0);
         checkArgument(extendThreshold > 0);
         checkArgument(shrinkThreshold > 0 && shrinkThreshold < 1);
+        this.continuousExtendThreshold = continuousExtendThreshold;
+        this.continuousShrinkThreshold = continuousShrinkThreshold;
         this.extendThreshold = extendThreshold;
         this.shrinkThreshold = shrinkThreshold;
     }
@@ -40,15 +52,31 @@ class SimpleConcurrencyAdjustStrategy implements ConcurrencyAdjustStrategy {
                 .collect(toList());
         ConcurrencyInfo first = minList.get(0);
         if (first.currentConcurrency() >= extendThreshold) {
-            return new AdjustResult(null, 1);
+            continuousExtendCount++;
+            if (continuousExtendCount == continuousExtendThreshold) {
+                continuousExtendCount = 0;
+                return new AdjustResult(null, 1);
+            } else {
+                return NO_CHANGE;
+            }
         }
         if (minList.size() == 1) {
+            continuousExtendCount = 0;
+            continuousShrinkCount = 0;
             return NO_CHANGE;
         }
         ConcurrencyInfo second = minList.get(1);
         if (second.currentConcurrency() < extendThreshold * shrinkThreshold) {
-            return new AdjustResult(singleton(first), 0);
+            continuousShrinkCount++;
+            if (continuousShrinkCount == continuousShrinkThreshold) {
+                continuousShrinkCount = 0;
+                return new AdjustResult(singleton(first), 0);
+            } else {
+                return NO_CHANGE;
+            }
         } else {
+            continuousExtendCount = 0;
+            continuousShrinkCount = 0;
             return NO_CHANGE;
         }
     }

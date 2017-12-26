@@ -28,6 +28,8 @@ public class ConcurrencyAwarePoolBuilder<T> {
     private static final Duration DEFAULT_EVALUATE_PERIOD = ofSeconds(1);
     private static final int DEFAULT_MIN_IDLE = 1;
     private static final int DEFAULT_MAX_SIZE = 10000;
+    private static final int DEFAULT_CONTINUOUS_EXTEND_THRESHOLD = 1;
+    private static final int DEFAULT_CONTINUOUS_SHRINK_THRESHOLD = 1;
 
     ThrowableSupplier<T, Exception> factory;
     ThrowableConsumer<T, Exception> destroy;
@@ -75,13 +77,22 @@ public class ConcurrencyAwarePoolBuilder<T> {
     }
 
     /**
-     * @param extendThreshold if average concurrency reach this threshold, the pool would extend.
-     * @param shrinkThreshold if average concurrency below extendThreshold*shrinkThreshold, the pool would shrink.
+     * @param extendThreshold if min concurrency reach this threshold, the pool would extend.
+     * @param shrinkThreshold if the second min concurrency below extendThreshold*shrinkThreshold, the pool would shrink.
      */
     @CheckReturnValue
     public ConcurrencyAwarePoolBuilder<T> simpleThresholdStrategy(@Nonnegative int extendThreshold,
             @Nonnegative double shrinkThreshold) {
-        return strategy(new SimpleConcurrencyAdjustStrategy(extendThreshold, shrinkThreshold));
+        return strategy(new SimpleConcurrencyAdjustStrategy(extendThreshold, shrinkThreshold,
+                DEFAULT_CONTINUOUS_EXTEND_THRESHOLD, DEFAULT_CONTINUOUS_SHRINK_THRESHOLD));
+    }
+
+    @CheckReturnValue
+    public ConcurrencyAwarePoolBuilder<T> simpleThresholdStrategy(@Nonnegative int extendThreshold,
+            @Nonnegative double shrinkThreshold, @Nonnegative int continuousExtendThreshold,
+            @Nonnegative int continuousShrinkThreshold) {
+        return strategy(new SimpleConcurrencyAdjustStrategy(extendThreshold, shrinkThreshold,
+                continuousExtendThreshold, continuousShrinkThreshold));
     }
 
     /**
