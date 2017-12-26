@@ -6,6 +6,7 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.lang.Math.min;
+import static java.util.Comparator.comparingInt;
 import static java.util.Optional.ofNullable;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -20,7 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -29,7 +30,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.phantomthief.failover.util.Weight;
 import com.github.phantomthief.pool.Pool;
 import com.github.phantomthief.pool.Pooled;
 import com.github.phantomthief.pool.StatsKey;
@@ -62,8 +62,6 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
 
     private final Map<StatsKey<?>, Supplier<?>> stats;
 
-    // weight is always non-null except for pool is closed.
-    private volatile Weight<CounterWrapper> weight;
     private volatile boolean closing = false;
 
     /**
@@ -86,7 +84,6 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
                 throw new RuntimeException(e);
             }
         }
-        updateWeight();
 
         long periodInMs = builder.evaluatePeriod.toMillis();
         ConcurrencyAdjustStrategy strategy = builder.strategy;
@@ -122,7 +119,6 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
             } catch (Throwable e) {
                 logger.error("", e);
             } finally {
-                updateWeight(); // after this call, no more new requests would be reached.
                 closePending(toClosed);
             }
         }, periodInMs, periodInMs, MILLISECONDS);
@@ -162,28 +158,16 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
         }
     }
 
-    private void updateWeight() {
-        int sum = currentAvailable.stream().mapToInt(CounterWrapper::currentConcurrency).sum();
-        Weight<CounterWrapper> thisWeight = new Weight<>();
-        for (CounterWrapper item : currentAvailable) {
-            thisWeight.add(item, Math.max(1, sum - item.currentConcurrency()));
-        }
-        weight = thisWeight;
-    }
-
     @Nonnull
     @Override
     public Pooled<T> borrow() {
         if (closing) {
             throw new IllegalStateException("pool is closed.");
         }
-        CounterWrapper counterWrapper;
-        try {
-            counterWrapper = weight.get();
-        } catch (NullPointerException e) {
-            throw new IllegalStateException("pool is closed.");
-        }
-        assert counterWrapper != null;
+        CounterWrapper counterWrapper = currentAvailable.stream() //
+                .filter(it -> !it.isClosing()) //
+                .min(comparingInt(CounterWrapper::currentConcurrency)) //
+                .orElseThrow(() -> new IllegalStateException("pool is closed."));
         counterWrapper.enter();
         return counterWrapper;
     }
@@ -227,7 +211,6 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
                 toThrow = e;
             }
         }
-        weight = null;
         if (toThrow != null) {
             throwIfUnchecked(toThrow);
             throw new RuntimeException(toThrow);
@@ -242,7 +225,7 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
     private class CounterWrapper implements Pooled<T>, AutoCloseable, ConcurrencyInfo {
 
         private final T obj;
-        private final LongAdder concurrency = new LongAdder();
+        private final AtomicInteger concurrency = new AtomicInteger();
 
         private volatile boolean closing = false;
 
@@ -274,18 +257,22 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
             }
         }
 
+        private boolean isClosing() {
+            return closing;
+        }
+
         @Override
         public int currentConcurrency() {
             return concurrency.intValue();
         }
 
         private void enter() {
-            concurrency.increment();
+            concurrency.getAndIncrement();
         }
 
         private void leave() {
-            concurrency.decrement();
-            if (closing) {
+            int after = concurrency.decrementAndGet();
+            if (closing && after == 0) {
                 synchronized (concurrency) {
                     concurrency.notifyAll();
                 }
@@ -300,7 +287,7 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
         SimpleStatsKey(Class<V> type) {
             this.type = type;
         }
-        
+
         V cast(Object obj) {
             return type.cast(obj);
         }
