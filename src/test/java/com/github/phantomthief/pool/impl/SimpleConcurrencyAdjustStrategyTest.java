@@ -17,7 +17,8 @@ class SimpleConcurrencyAdjustStrategyTest {
 
     @Test
     void testAdjust() {
-        SimpleConcurrencyAdjustStrategy strategy = new SimpleConcurrencyAdjustStrategy(10, 0.5);
+        SimpleConcurrencyAdjustStrategy strategy = new SimpleConcurrencyAdjustStrategy(10, 0.5, 1,
+                1);
         // heavy to expend
         AdjustResult adjust = strategy.adjust(of(new MyConcurrencyInfo(20)));
         assertNotNull(adjust);
@@ -33,7 +34,7 @@ class SimpleConcurrencyAdjustStrategyTest {
         assertNotNull(adjust.getEvict());
         assertTrue(toEvict == adjust.getEvict().iterator().next());
 
-        strategy = new SimpleConcurrencyAdjustStrategy( 10, 0.9);
+        strategy = new SimpleConcurrencyAdjustStrategy(10, 0.9, 1, 1);
         adjust = strategy.adjust(of( //
                 new MyConcurrencyInfo(9), //
                 new MyConcurrencyInfo(9), //
@@ -57,6 +58,44 @@ class SimpleConcurrencyAdjustStrategyTest {
 
         adjust = strategy.adjust(of( //
                 new MyConcurrencyInfo(9), new MyConcurrencyInfo(10)));
+        assertNull(adjust);
+    }
+
+    @Test
+    void testContinuous() {
+        SimpleConcurrencyAdjustStrategy strategy = new SimpleConcurrencyAdjustStrategy(10, 0.5, 3,
+                5);
+        // heavy to expend
+        MyConcurrencyInfo heavyOne = new MyConcurrencyInfo(20);
+        AdjustResult adjust = strategy.adjust(of(heavyOne));
+        assertNull(adjust);
+        adjust = strategy.adjust(of(heavyOne));
+        assertNull(adjust);
+        adjust = strategy.adjust(of(heavyOne));
+        assertNotNull(adjust);
+        assertTrue(adjust.getCreate() == 1);
+        adjust = strategy.adjust(of(heavyOne));
+        assertNull(adjust);
+
+        // idle to shrink
+        MyConcurrencyInfo notReached = new MyConcurrencyInfo(4);
+        ConcurrencyInfo toEvict = new MyConcurrencyInfo(3);
+        adjust = strategy.adjust(of(notReached, toEvict));
+        assertNull(adjust);
+        adjust = strategy.adjust(of(notReached, toEvict));
+        assertNull(adjust);
+        adjust = strategy.adjust(of(notReached, toEvict));
+        assertNull(adjust);
+        adjust = strategy.adjust(of(notReached, toEvict));
+        assertNull(adjust);
+
+        adjust = strategy.adjust(of(notReached, toEvict));
+        assertNotNull(adjust);
+        assertTrue(adjust.getCreate() == 0);
+        assertNotNull(adjust.getEvict());
+        assertTrue(toEvict == adjust.getEvict().iterator().next());
+
+        adjust = strategy.adjust(of(notReached, toEvict));
         assertNull(adjust);
     }
 
