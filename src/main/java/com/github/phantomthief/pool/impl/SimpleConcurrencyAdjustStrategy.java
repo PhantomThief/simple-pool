@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
- * extend or shrink only one item on each cycle.
+ * extend or shrink at most one item on each cycle.
  *
  * @author w.vela
  * Created on 2017-10-18.
@@ -54,30 +54,33 @@ class SimpleConcurrencyAdjustStrategy implements ConcurrencyAdjustStrategy {
         if (first.currentConcurrency() >= extendThreshold) {
             continuousExtendCount++;
             if (continuousExtendCount == continuousExtendThreshold) {
-                continuousExtendCount = 0;
+                resetContinuousCounter();
                 return new AdjustResult(null, 1);
             } else {
                 return NO_CHANGE;
             }
         }
         if (minList.size() == 1) {
-            continuousExtendCount = 0;
-            continuousShrinkCount = 0;
+            resetContinuousCounter();
             return NO_CHANGE;
         }
         ConcurrencyInfo second = minList.get(1);
         if (second.currentConcurrency() < extendThreshold * shrinkThreshold) {
             continuousShrinkCount++;
             if (continuousShrinkCount == continuousShrinkThreshold) {
-                continuousShrinkCount = 0;
+                resetContinuousCounter();
                 return new AdjustResult(singleton(first), 0);
             } else {
                 return NO_CHANGE;
             }
         } else {
-            continuousExtendCount = 0;
-            continuousShrinkCount = 0;
+            resetContinuousCounter();
             return NO_CHANGE;
         }
+    }
+
+    private void resetContinuousCounter() {
+        continuousExtendCount = 0;
+        continuousShrinkCount = 0;
     }
 }

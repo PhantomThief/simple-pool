@@ -87,6 +87,10 @@ public class ConcurrencyAwarePoolBuilder<T> {
                 DEFAULT_CONTINUOUS_EXTEND_THRESHOLD, DEFAULT_CONTINUOUS_SHRINK_THRESHOLD));
     }
 
+    /**
+     * @param extendThreshold if min concurrency reach this threshold, the pool would extend.
+     * @param shrinkThreshold if the second min concurrency below extendThreshold*shrinkThreshold, the pool would shrink.
+     */
     @CheckReturnValue
     public ConcurrencyAwarePoolBuilder<T> simpleThresholdStrategy(@Nonnegative int extendThreshold,
             @Nonnegative double shrinkThreshold, @Nonnegative int continuousExtendThreshold,
