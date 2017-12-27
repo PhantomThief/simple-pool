@@ -57,6 +57,7 @@ class SimpleConcurrencyAdjustStrategy implements ConcurrencyAdjustStrategy {
                 resetContinuousCounter();
                 return new AdjustResult(null, 1);
             } else {
+                continuousShrinkCount = 0;
                 return NO_CHANGE;
             }
         }
@@ -71,6 +72,7 @@ class SimpleConcurrencyAdjustStrategy implements ConcurrencyAdjustStrategy {
                 resetContinuousCounter();
                 return new AdjustResult(singleton(first), 0);
             } else {
+                continuousExtendCount = 0;
                 return NO_CHANGE;
             }
         } else {
