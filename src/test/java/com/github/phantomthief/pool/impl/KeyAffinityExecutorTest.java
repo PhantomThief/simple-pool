@@ -4,14 +4,14 @@ import static com.github.phantomthief.pool.KeyAffinityExecutor.newSerializingExe
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,16 +25,20 @@ import com.github.phantomthief.pool.KeyAffinityExecutor;
 class KeyAffinityExecutorTest {
 
     private static final Logger logger = LoggerFactory.getLogger(KeyAffinityExecutorTest.class);
-    private KeyAffinityExecutor<Integer> keyExecutor;
+    private static final int LOOP = 1000;
 
-    @BeforeEach
-    void setUp() {
-        keyExecutor = newSerializingExecutor(10, "s-%d");
+    @Test
+    void testClose() throws Exception {
+        KeyAffinityExecutor<Integer> executor = newSerializingExecutor(10, "s-%d");
+        executor.execute(1, () -> {});
+        executor.close();
+        assertThrows(RejectedExecutionException.class, () -> executor.execute(1, () -> {}));
     }
 
     @Test
-    void test() {
+    void test() throws Exception {
         Map<Integer, String> firstMapping = new ConcurrentHashMap<>();
+        KeyAffinityExecutor<Integer> keyExecutor = newSerializingExecutor(10, "s-%d");
         for (int i = 0; i < 20; i++) {
             int j = i;
             keyExecutor.execute(j, () -> {
@@ -44,8 +48,7 @@ class KeyAffinityExecutorTest {
         }
         sleepUninterruptibly(1, SECONDS);
         AtomicInteger counter = new AtomicInteger();
-        int loop = 1000;
-        for (int i = 0; i < loop; i++) {
+        for (int i = 0; i < LOOP; i++) {
             int key = ThreadLocalRandom.current().nextInt(20);
             keyExecutor.execute(key, () -> {
                 String firstV = firstMapping.get(key);
@@ -53,18 +56,13 @@ class KeyAffinityExecutorTest {
                 counter.incrementAndGet();
             });
         }
-        sleepUninterruptibly(3, SECONDS);
+        keyExecutor.close();
         logger.info("gathered threads:{}", firstMapping);
-        assertEquals(loop, counter.get());
+        assertEquals(LOOP, counter.get());
     }
 
     private String currentThreadIdentity() {
         Thread thread = Thread.currentThread();
         return thread.toString() + "/" + thread.hashCode();
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        keyExecutor.close();
     }
 }
