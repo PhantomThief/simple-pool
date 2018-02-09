@@ -30,6 +30,7 @@ public class KeyAffinityExecutorBuilder {
         if (shutdownAfterClose) {
             builder.depose(it -> shutdownAndAwaitTermination(it, 1, DAYS));
         }
+        builder.ensure();
         return new ExecutorImpl<>(builder::buildInner);
     }
 
