@@ -38,7 +38,7 @@ class KeyAffinityExecutorTest {
     @Test
     void test() throws Exception {
         Map<Integer, String> firstMapping = new ConcurrentHashMap<>();
-        KeyAffinityExecutor<Integer> keyExecutor = newSerializingExecutor(50, "s-%d");
+        KeyAffinityExecutor<Integer> keyExecutor = newSerializingExecutor(50, 1000, "s-%d");
         for (int i = 0; i < 20; i++) {
             int j = i;
             keyExecutor.execute(j, () -> {
