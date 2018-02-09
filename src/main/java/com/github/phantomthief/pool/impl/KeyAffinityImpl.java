@@ -23,16 +23,14 @@ import com.github.phantomthief.util.ThrowableConsumer;
  */
 class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
 
-    private static final int RANDOM_THRESHOLD = 20;
-
     private final List<ValueRef> all;
     private final ThrowableConsumer<V, Exception> deposeFunc;
     private final Map<K, KeyRef> mapping = new ConcurrentHashMap<>();
     private final boolean usingRandom;
 
     KeyAffinityImpl(@Nonnull Supplier<V> supplier, int count,
-            @Nonnull ThrowableConsumer<V, Exception> deposeFunc) {
-        this.usingRandom = count > RANDOM_THRESHOLD;
+            @Nonnull ThrowableConsumer<V, Exception> deposeFunc, boolean usingRandom) {
+        this.usingRandom = usingRandom;
         this.all = IntStream.range(0, count) //
                 .mapToObj(it -> supplier.get()) //
                 .map(ValueRef::new) //

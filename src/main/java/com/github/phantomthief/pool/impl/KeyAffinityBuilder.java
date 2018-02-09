@@ -20,9 +20,12 @@ import com.github.phantomthief.util.ThrowableConsumer;
 @NotThreadSafe
 public class KeyAffinityBuilder<V> {
 
+    private static final int RANDOM_THRESHOLD = 20;
+
     private Supplier<V> factory;
     private int count;
     private ThrowableConsumer<V, Exception> depose;
+    private Boolean usingRandom;
 
     public <K> KeyAffinity<K, V> build() {
         ensure();
@@ -30,7 +33,7 @@ public class KeyAffinityBuilder<V> {
     }
 
     <K> KeyAffinity<K, V> buildInner() {
-        return new KeyAffinityImpl<>(factory, count, depose);
+        return new KeyAffinityImpl<>(factory, count, depose, usingRandom);
     }
 
     void ensure() {
@@ -40,12 +43,27 @@ public class KeyAffinityBuilder<V> {
         if (depose == null) {
             depose = it -> {};
         }
+        if (usingRandom == null) {
+            usingRandom = count > RANDOM_THRESHOLD;
+        }
     }
 
     @SuppressWarnings("unchecked")
     @CheckReturnValue
     public <T extends KeyAffinityBuilder<V>> T factory(@Nonnull Supplier<V> factory) {
         this.factory = checkNotNull(factory);
+        return (T) this;
+    }
+
+    /**
+     * whether to use random strategy or less concurrency strategy
+     * @param value {@code true} is random strategy and {@code false} is less concurrency strategy
+     * default value is {@code true} is {@link #count} larger than {@link #RANDOM_THRESHOLD}
+     */
+    @SuppressWarnings("unchecked")
+    @CheckReturnValue
+    public <T extends KeyAffinityBuilder<V>> T usingRandom(boolean value) {
+        this.usingRandom = value;
         return (T) this;
     }
 

@@ -42,6 +42,15 @@ public class KeyAffinityExecutorBuilder {
         return this;
     }
 
+    /**
+     * see {@link KeyAffinityBuilder#usingRandom(boolean)}
+     */
+    @CheckReturnValue
+    public KeyAffinityExecutorBuilder usingRandom(boolean value) {
+        builder.usingRandom(value);
+        return this;
+    }
+
     @CheckReturnValue
     public KeyAffinityExecutorBuilder executor(@Nonnull Supplier<ExecutorService> factory) {
         checkNotNull(factory);
