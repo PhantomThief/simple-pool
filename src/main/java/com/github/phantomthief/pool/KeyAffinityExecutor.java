@@ -40,6 +40,11 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
         return newSerializingExecutor(parallelism, DEFAULT_QUEUE_SIZE, threadName);
     }
 
+    /**
+     * @param parallelism max concurrency for task submitted.
+     * @param queueBufferSize max queue size for every executor, 0 means unbounded queue.
+     * @param threadName see {@link ThreadFactoryBuilder#setNameFormat(String)}
+     */
     @Nonnull
     static <K> KeyAffinityExecutor<K> newSerializingExecutor(int parallelism, int queueBufferSize,
             String threadName) {
@@ -53,20 +58,25 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
 
                     @Override
                     public ExecutorService get() {
-                        return new ThreadPoolExecutor(1, 1, 0L, MILLISECONDS,
-                                new LinkedBlockingQueue<Runnable>(queueBufferSize) {
+                        LinkedBlockingQueue<Runnable> queue;
+                        if (queueBufferSize > 0) {
+                            queue = new LinkedBlockingQueue<Runnable>(queueBufferSize) {
 
-                                    @Override
-                                    public boolean offer(Runnable e) {
-                                        try {
-                                            put(e);
-                                            return true;
-                                        } catch (InterruptedException ie) {
-                                            Thread.currentThread().interrupt();
-                                        }
-                                        return false;
+                                @Override
+                                public boolean offer(Runnable e) {
+                                    try {
+                                        put(e);
+                                        return true;
+                                    } catch (InterruptedException ie) {
+                                        Thread.currentThread().interrupt();
                                     }
-                                }, threadFactory);
+                                    return false;
+                                }
+                            };
+                        } else {
+                            queue = new LinkedBlockingQueue<>();
+                        }
+                        return new ThreadPoolExecutor(1, 1, 0L, MILLISECONDS, queue, threadFactory);
                     }
                 }) //
                 .build();
