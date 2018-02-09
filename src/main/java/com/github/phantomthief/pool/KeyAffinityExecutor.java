@@ -28,17 +28,19 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutorService> {
 
-    static final int DEFAULT_QUEUE_SIZE = 100;
+    int DEFAULT_QUEUE_SIZE = 100;
 
     @Nonnull
     static KeyAffinityExecutorBuilder newKeyAffinityExecutor() {
         return new KeyAffinityExecutorBuilder();
     }
 
+    @Nonnull
     static <K> KeyAffinityExecutor<K> newSerializingExecutor(int parallelism, String threadName) {
         return newSerializingExecutor(parallelism, DEFAULT_QUEUE_SIZE, threadName);
     }
 
+    @Nonnull
     static <K> KeyAffinityExecutor<K> newSerializingExecutor(int parallelism, int queueBufferSize,
             String threadName) {
         return newKeyAffinityExecutor() //
@@ -56,7 +58,6 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
 
                                     @Override
                                     public boolean offer(Runnable e) {
-                                        // turn offer() and add() into a blocking calls (unless interrupted)
                                         try {
                                             put(e);
                                             return true;
