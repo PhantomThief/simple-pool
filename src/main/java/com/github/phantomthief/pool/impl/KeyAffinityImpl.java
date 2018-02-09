@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.toList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -22,12 +23,16 @@ import com.github.phantomthief.util.ThrowableConsumer;
  */
 class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
 
+    private static final int RANDOM_THRESHOLD = 20;
+
     private final List<ValueRef> all;
     private final ThrowableConsumer<V, Exception> deposeFunc;
     private final Map<K, KeyRef> mapping = new ConcurrentHashMap<>();
+    private final boolean usingRandom;
 
     KeyAffinityImpl(@Nonnull Supplier<V> supplier, int count,
             @Nonnull ThrowableConsumer<V, Exception> deposeFunc) {
+        this.usingRandom = count > RANDOM_THRESHOLD;
         this.all = IntStream.range(0, count) //
                 .mapToObj(it -> supplier.get()) //
                 .map(ValueRef::new) //
@@ -40,10 +45,14 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
     public V select(K key) {
         KeyRef keyRef = mapping.compute(key, (k, v) -> {
             if (v == null) {
-                v = all.stream() //
-                        .min(comparingInt(ValueRef::concurrency)) //
-                        .map(KeyRef::new) //
-                        .orElseThrow(IllegalStateException::new);
+                if (usingRandom) {
+                    v = new KeyRef(all.get(ThreadLocalRandom.current().nextInt(all.size())));
+                } else {
+                    v = all.stream() //
+                            .min(comparingInt(ValueRef::concurrency)) //
+                            .map(KeyRef::new) //
+                            .orElseThrow(IllegalStateException::new);
+                }
             }
             v.incrConcurrency();
             return v;
