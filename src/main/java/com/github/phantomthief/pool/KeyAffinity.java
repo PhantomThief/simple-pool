@@ -12,7 +12,7 @@ import com.github.phantomthief.util.ThrowableFunction;
  * @author w.vela
  * Created on 2018-02-03.
  */
-public interface KeyAffinity<K, V> extends AutoCloseable {
+public interface KeyAffinity<K, V> extends AutoCloseable, Iterable<V> {
 
     @Nonnull
     static <V> KeyAffinityBuilder<V> newBuilder() {

@@ -1,9 +1,11 @@
 package com.github.phantomthief.pool.impl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterators.transform;
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.toList;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,6 +81,11 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
         for (ValueRef ref : all) {
             deposeFunc.accept(ref.obj);
         }
+    }
+
+    @Override
+    public Iterator<V> iterator() {
+        return transform(all.iterator(), v -> v.obj);
     }
 
     private class KeyRef {
