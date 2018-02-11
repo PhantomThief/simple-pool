@@ -102,20 +102,28 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
 
     default <T> ListenableFuture<T> submit(K key, Callable<T> task) {
         ListeningExecutorService service = select(key);
-        ListenableFuture<T> future = service.submit(task);
-        addCallback(future, new FutureCallback<Object>() {
+        boolean addCallback = false;
+        try {
+            ListenableFuture<T> future = service.submit(task);
+            addCallback(future, new FutureCallback<Object>() {
 
-            @Override
-            public void onSuccess(@Nullable Object result) {
+                @Override
+                public void onSuccess(@Nullable Object result) {
+                    finishCall(key);
+                }
+
+                @Override
+                public void onFailure(Throwable t) {
+                    finishCall(key);
+                }
+            }, directExecutor());
+            addCallback = true;
+            return future;
+        } finally {
+            if (!addCallback) {
                 finishCall(key);
             }
-
-            @Override
-            public void onFailure(Throwable t) {
-                finishCall(key);
-            }
-        }, directExecutor());
-        return future;
+        }
     }
 
     default ListenableFuture<?> execute(K key, Runnable task) {
