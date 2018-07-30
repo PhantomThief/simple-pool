@@ -226,6 +226,7 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
     }
 
     @CheckReturnValue
+    @Nonnull
     public static <T> ConcurrencyAwarePoolBuilder<T> builder() {
         return new ConcurrencyAwarePoolBuilder<>();
     }

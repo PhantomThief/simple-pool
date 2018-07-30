@@ -26,6 +26,7 @@ public class KeyAffinityExecutorBuilder {
 
     private boolean shutdownAfterClose = true;
 
+    @Nonnull
     public <K> KeyAffinityExecutor<K> build() {
         if (shutdownAfterClose) {
             builder.depose(it -> shutdownAndAwaitTermination(it, 1, DAYS));
@@ -38,6 +39,7 @@ public class KeyAffinityExecutorBuilder {
      * @param value default value if {@code true}
      */
     @CheckReturnValue
+    @Nonnull
     public KeyAffinityExecutorBuilder shutdownExecutorAfterClose(boolean value) {
         shutdownAfterClose = value;
         return this;
@@ -47,12 +49,14 @@ public class KeyAffinityExecutorBuilder {
      * see {@link KeyAffinityBuilder#usingRandom(boolean)}
      */
     @CheckReturnValue
+    @Nonnull
     public KeyAffinityExecutorBuilder usingRandom(boolean value) {
         builder.usingRandom(value);
         return this;
     }
 
     @CheckReturnValue
+    @Nonnull
     public KeyAffinityExecutorBuilder executor(@Nonnull Supplier<ExecutorService> factory) {
         checkNotNull(factory);
         builder.factory(() -> {
@@ -67,6 +71,7 @@ public class KeyAffinityExecutorBuilder {
     }
 
     @CheckReturnValue
+    @Nonnull
     public KeyAffinityExecutorBuilder count(int count) {
         builder.count(count);
         return this;

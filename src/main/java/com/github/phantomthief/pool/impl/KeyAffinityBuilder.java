@@ -50,6 +50,7 @@ public class KeyAffinityBuilder<V> {
 
     @SuppressWarnings("unchecked")
     @CheckReturnValue
+    @Nonnull
     public <T extends KeyAffinityBuilder<V>> T factory(@Nonnull Supplier<V> factory) {
         this.factory = checkNotNull(factory);
         return (T) this;
@@ -62,6 +63,7 @@ public class KeyAffinityBuilder<V> {
      */
     @SuppressWarnings("unchecked")
     @CheckReturnValue
+    @Nonnull
     public <T extends KeyAffinityBuilder<V>> T usingRandom(boolean value) {
         this.usingRandom = value;
         return (T) this;
@@ -69,6 +71,7 @@ public class KeyAffinityBuilder<V> {
 
     @SuppressWarnings("unchecked")
     @CheckReturnValue
+    @Nonnull
     public <T extends KeyAffinityBuilder<V>> T count(@Nonnegative int count) {
         checkArgument(count > 0);
         this.count = count;
@@ -77,6 +80,7 @@ public class KeyAffinityBuilder<V> {
 
     @SuppressWarnings("unchecked")
     @CheckReturnValue
+    @Nonnull
     public <T extends KeyAffinityBuilder<V>> T
             depose(@Nonnegative ThrowableConsumer<V, Exception> depose) {
         this.depose = checkNotNull(depose);

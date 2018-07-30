@@ -42,12 +42,14 @@ public class ConcurrencyAwarePoolBuilder<T> {
     }
 
     @CheckReturnValue
+    @Nonnull
     public ConcurrencyAwarePoolBuilder<T> destroy(@Nonnull ThrowableConsumer<T, Exception> value) {
         this.destroy = checkNotNull(value);
         return this;
     }
 
     @CheckReturnValue
+    @Nonnull
     public ConcurrencyAwarePoolBuilder<T> minIdle(@Nonnegative int value) {
         checkArgument(value > 0);
         this.minIdle = value;
@@ -55,6 +57,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
     }
 
     @CheckReturnValue
+    @Nonnull
     public ConcurrencyAwarePoolBuilder<T> maxSize(@Nonnegative int value) {
         checkArgument(value > 0);
         this.maxSize = value;
@@ -62,6 +65,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
     }
 
     @CheckReturnValue
+    @Nonnull
     public ConcurrencyAwarePoolBuilder<T> strategy(@Nonnull ConcurrencyAdjustStrategy strategy) {
         this.strategy = checkNotNull(strategy);
         return this;
@@ -71,6 +75,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
      * default value is {@link #DEFAULT_EVALUATE_PERIOD}
      */
     @CheckReturnValue
+    @Nonnull
     public ConcurrencyAwarePoolBuilder<T> evaluatePeriod(@Nonnull Duration duration){
         this.evaluatePeriod = duration;
         return this;
@@ -81,6 +86,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
      * @param shrinkThreshold if the second min concurrency below extendThreshold*shrinkThreshold, the pool would shrink.
      */
     @CheckReturnValue
+    @Nonnull
     public ConcurrencyAwarePoolBuilder<T> simpleThresholdStrategy(@Nonnegative int extendThreshold,
             @Nonnegative double shrinkThreshold) {
         return strategy(new SimpleConcurrencyAdjustStrategy(extendThreshold, shrinkThreshold,
@@ -92,6 +98,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
      * @param shrinkThreshold if the second min concurrency below extendThreshold*shrinkThreshold, the pool would shrink.
      */
     @CheckReturnValue
+    @Nonnull
     public ConcurrencyAwarePoolBuilder<T> simpleThresholdStrategy(@Nonnegative int extendThreshold,
             @Nonnegative double shrinkThreshold, @Nonnegative int continuousExtendThreshold,
             @Nonnegative int continuousShrinkThreshold) {
@@ -102,6 +109,7 @@ public class ConcurrencyAwarePoolBuilder<T> {
     /**
      * @throws IllegalArgumentException when maxSize is smaller than minIdle
      */
+    @Nonnull
     public Pool<T> build(@Nonnull ThrowableSupplier<T, Exception> value) {
         this.factory = checkNotNull(value);
         ensure();
