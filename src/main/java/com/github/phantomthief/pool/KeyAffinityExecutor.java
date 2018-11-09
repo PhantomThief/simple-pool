@@ -1,5 +1,6 @@
 package com.github.phantomthief.pool;
 
+import static com.github.phantomthief.util.MoreReflection.logDeprecated;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.util.concurrent.Futures.addCallback;
@@ -138,6 +139,8 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
     @Deprecated
     default ListenableFuture<?> execute(K key, @Nonnull Runnable task) {
         checkNotNull(task);
+
+        logDeprecated("Deprecated calling:KeyAffinityExecutor.execute() at ({}), use executeEx() instead.");
 
         return submit(key, () -> {
             task.run();
