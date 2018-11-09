@@ -133,7 +133,7 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
     }
 
     /**
-     * use {@link #executeEx instead
+     * use {@link #executeEx} instead
      */
     @Deprecated
     default ListenableFuture<?> execute(K key, @Nonnull Runnable task) {

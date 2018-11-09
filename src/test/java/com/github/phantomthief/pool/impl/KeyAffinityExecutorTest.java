@@ -1,7 +1,9 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.github.phantomthief.pool.KeyAffinityExecutor.newKeyAffinityExecutor;
 import static com.github.phantomthief.pool.KeyAffinityExecutor.newSerializingExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -10,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,9 +71,9 @@ class KeyAffinityExecutorTest {
     @Test
     void testExecuteEx() throws InterruptedException {
         AtomicReference<Throwable> throwable = new AtomicReference<>();
-        KeyAffinityExecutor<Integer> keyExecutor = KeyAffinityExecutor.newKeyAffinityExecutor()
+        KeyAffinityExecutor<Integer> keyExecutor = newKeyAffinityExecutor()
                 .count(20) //
-                .executor(() -> Executors.newSingleThreadExecutor(new ThreadFactoryBuilder() //
+                .executor(() -> newSingleThreadExecutor(new ThreadFactoryBuilder() //
                         .setUncaughtExceptionHandler((t, e) -> {
                             throwable.set(e);
                             synchronized (throwable) {
