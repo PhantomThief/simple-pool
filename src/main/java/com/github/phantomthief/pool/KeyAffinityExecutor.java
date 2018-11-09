@@ -1,5 +1,8 @@
 package com.github.phantomthief.pool;
 
+import static com.github.phantomthief.util.MoreReflection.logDeprecated;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -17,10 +20,12 @@ import javax.annotation.Nullable;
 import com.github.phantomthief.pool.impl.KeyAffinityExecutorBuilder;
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.github.phantomthief.util.ThrowableFunction;
+import com.github.phantomthief.util.ThrowableRunnable;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 
 /**
  * @author w.vela
@@ -100,7 +105,9 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
         throw new UnsupportedOperationException();
     }
 
-    default <T> ListenableFuture<T> submit(K key, Callable<T> task) {
+    default <T> ListenableFuture<T> submit(K key, @Nonnull Callable<T> task) {
+        checkNotNull(task);
+
         ListeningExecutorService service = select(key);
         boolean addCallback = false;
         try {
@@ -126,10 +133,42 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
         }
     }
 
-    default ListenableFuture<?> execute(K key, Runnable task) {
+    /**
+     * use {@link #executeEx} instead
+     */
+    @Deprecated
+    default ListenableFuture<?> execute(K key, @Nonnull Runnable task) {
+        checkNotNull(task);
+
+        logDeprecated("Deprecated calling:KeyAffinityExecutor.execute() at ({}), use executeEx() instead.");
+
         return submit(key, () -> {
             task.run();
             return null;
         });
+    }
+
+    default void executeEx(K key, @Nonnull ThrowableRunnable<Exception> task) {
+        checkNotNull(task);
+
+        ListeningExecutorService service = select(key);
+        boolean addCallback = false;
+        try {
+            service.execute(() -> {
+                try {
+                    task.run();
+                } catch (Throwable e) { // pass to uncaught exception handler
+                    throwIfUnchecked(e);
+                    throw new UncheckedExecutionException(e);
+                } finally {
+                    finishCall(key);
+                }
+            });
+            addCallback = true;
+        } finally {
+            if (!addCallback) {
+                finishCall(key);
+            }
+        }
     }
 }

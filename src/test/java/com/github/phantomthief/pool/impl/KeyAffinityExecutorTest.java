@@ -1,22 +1,29 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.github.phantomthief.pool.KeyAffinityExecutor.newKeyAffinityExecutor;
 import static com.github.phantomthief.pool.KeyAffinityExecutor.newSerializingExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.phantomthief.pool.KeyAffinityExecutor;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 
 /**
  * @author w.vela
@@ -59,6 +66,30 @@ class KeyAffinityExecutorTest {
         keyExecutor.close();
         logger.info("gathered threads:{}", firstMapping);
         assertEquals(LOOP, counter.get());
+    }
+
+    @Test
+    void testExecuteEx() throws InterruptedException {
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+        KeyAffinityExecutor<Integer> keyExecutor = newKeyAffinityExecutor()
+                .count(20) //
+                .executor(() -> newSingleThreadExecutor(new ThreadFactoryBuilder() //
+                        .setUncaughtExceptionHandler((t, e) -> {
+                            throwable.set(e);
+                            synchronized (throwable) {
+                                throwable.notifyAll();
+                            }
+                        }).build()))
+                .build();
+        keyExecutor.executeEx(1, () -> {
+            logger.info("execute...");
+            throw new IOException("test");
+        });
+        synchronized (throwable) {
+            throwable.wait();
+        }
+        assertSame(UncheckedExecutionException.class, throwable.get().getClass());
+        assertSame(IOException.class, throwable.get().getCause().getClass());
     }
 
     private String currentThreadIdentity() {
