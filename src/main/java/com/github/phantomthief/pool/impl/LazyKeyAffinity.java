@@ -34,6 +34,11 @@ class LazyKeyAffinity<K, V> implements KeyAffinity<K, V> {
     }
 
     @Override
+    public boolean inited() {
+        return factory.isInitialized();
+    }
+
+    @Override
     public void close() throws Exception {
         factory.tryClose(KeyAffinity::close);
     }

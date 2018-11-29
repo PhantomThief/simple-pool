@@ -7,6 +7,7 @@ import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -170,5 +171,12 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
                 finishCall(key);
             }
         }
+    }
+
+    /**
+     * for stats only, cannot do any operations.
+     */
+    static Collection<KeyAffinityExecutor<?>> allExecutorsForStats() {
+        return KeyAffinityExecutorBuilder.getAllExecutors();
     }
 }

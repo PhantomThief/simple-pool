@@ -41,4 +41,6 @@ public interface KeyAffinity<K, V> extends AutoCloseable, Iterable<V> {
             return null;
         });
     }
+    
+    boolean inited();
 }

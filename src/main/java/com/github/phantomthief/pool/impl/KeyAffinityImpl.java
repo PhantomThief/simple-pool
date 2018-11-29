@@ -72,6 +72,11 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
     }
 
     @Override
+    public boolean inited() {
+        return true;
+    }
+
+    @Override
     public void close() throws Exception {
         synchronized (all) {
             while (all.stream().anyMatch(it -> it.concurrency.get() > 0)) {

@@ -1,10 +1,15 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.github.phantomthief.pool.impl.KeyAffinityExecutorForStats.wrapStats;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
+import static java.util.Collections.unmodifiableCollection;
 import static java.util.concurrent.TimeUnit.DAYS;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
@@ -22,6 +27,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class KeyAffinityExecutorBuilder {
 
+    private static final Map<KeyAffinityExecutor<?>, KeyAffinityExecutor<?>> ALL_EXECUTORS = new ConcurrentHashMap<>();
     private final KeyAffinityBuilder<ListeningExecutorService> builder = new KeyAffinityBuilder<>();
 
     private boolean shutdownAfterClose = true;
@@ -32,7 +38,9 @@ public class KeyAffinityExecutorBuilder {
             builder.depose(it -> shutdownAndAwaitTermination(it, 1, DAYS));
         }
         builder.ensure();
-        return new ExecutorImpl<>(builder::buildInner);
+        ExecutorImpl<K> result = new ExecutorImpl<>(builder::buildInner);
+        ALL_EXECUTORS.put(result, wrapStats(result));
+        return result;
     }
 
     /**
@@ -77,11 +85,24 @@ public class KeyAffinityExecutorBuilder {
         return this;
     }
 
+    public static Collection<KeyAffinityExecutor<?>> getAllExecutors() {
+        return unmodifiableCollection(ALL_EXECUTORS.values());
+    }
+
     private class ExecutorImpl<K> extends LazyKeyAffinity<K, ListeningExecutorService> implements
                               KeyAffinityExecutor<K> {
 
         ExecutorImpl(Supplier<KeyAffinity<K, ListeningExecutorService>> factory) {
             super(factory);
+        }
+
+        @Override
+        public void close() throws Exception {
+            try {
+                super.close();
+            } finally {
+                ALL_EXECUTORS.remove(this);
+            }
         }
     }
 }
