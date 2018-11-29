@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Supplier;
 
 import javax.annotation.CheckReturnValue;
@@ -73,6 +74,8 @@ public class KeyAffinityExecutorBuilder {
             ExecutorService executor = factory.get();
             if (executor instanceof ListeningExecutorService) {
                 return (ListeningExecutorService) executor;
+            } else if (executor instanceof ThreadPoolExecutor) {
+                return new ThreadListeningExecutorService((ThreadPoolExecutor) executor);
             } else {
                 return listeningDecorator(executor);
             }
