@@ -174,6 +174,13 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
     }
 
     /**
+     * @return {@code null if not inited
+     * @throws IllegalStateException if cannot calc stats
+     */
+    @Nullable
+    KeyAffinityExecutorStats stats();
+
+    /**
      * for stats only, cannot do any operations.
      */
     static Collection<KeyAffinityExecutor<?>> allExecutorsForStats() {

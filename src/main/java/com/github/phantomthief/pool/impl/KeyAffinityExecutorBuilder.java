@@ -15,9 +15,11 @@ import java.util.function.Supplier;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.github.phantomthief.pool.KeyAffinity;
 import com.github.phantomthief.pool.KeyAffinityExecutor;
+import com.github.phantomthief.pool.KeyAffinityExecutorStats;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 /**
@@ -103,6 +105,22 @@ public class KeyAffinityExecutorBuilder {
             } finally {
                 ALL_EXECUTORS.remove(this);
             }
+        }
+
+        @Nullable
+        @Override
+        public KeyAffinityExecutorStats stats() {
+            int parallelism = 0;
+            int activeCount = 0;
+            for (ListeningExecutorService executor : this) {
+                parallelism++;
+                if (executor instanceof ThreadListeningExecutorService) {
+                    activeCount += ((ThreadListeningExecutorService) executor).getActiveCount();
+                } else {
+                    throw new IllegalStateException("cannot get stats for " + this);
+                }
+            }
+            return new KeyAffinityExecutorStats(parallelism, activeCount);
         }
     }
 }

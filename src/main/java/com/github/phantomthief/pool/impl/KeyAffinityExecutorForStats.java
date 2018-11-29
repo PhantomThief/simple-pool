@@ -5,6 +5,7 @@ import java.util.Iterator;
 import javax.annotation.Nonnull;
 
 import com.github.phantomthief.pool.KeyAffinityExecutor;
+import com.github.phantomthief.pool.KeyAffinityExecutorStats;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 /**
@@ -51,5 +52,14 @@ class KeyAffinityExecutorForStats<K> implements KeyAffinityExecutor<K> {
     @Override
     public Iterator<ListeningExecutorService> iterator() {
         return delegate.iterator();
+    }
+
+    @Override
+    public KeyAffinityExecutorStats stats() {
+        if (delegate.inited()) {
+            return delegate.stats();
+        } else {
+            return null;
+        }
     }
 }
