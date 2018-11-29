@@ -100,4 +100,8 @@ class ThreadListeningExecutorService implements ListeningExecutorService {
     public int getActiveCount() {
         return threadPoolExecutor.getActiveCount();
     }
+
+    public int getMaximumPoolSize() {
+        return threadPoolExecutor.getMaximumPoolSize();
+    }
 }

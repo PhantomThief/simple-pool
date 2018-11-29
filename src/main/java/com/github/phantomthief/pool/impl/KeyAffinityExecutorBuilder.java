@@ -116,8 +116,8 @@ public class KeyAffinityExecutorBuilder {
             int parallelism = 0;
             int activeCount = 0;
             for (ListeningExecutorService executor : this) {
-                parallelism++;
                 if (executor instanceof ThreadListeningExecutorService) {
+                    parallelism += ((ThreadListeningExecutorService) executor).getMaximumPoolSize();
                     activeCount += ((ThreadListeningExecutorService) executor).getActiveCount();
                 } else {
                     throw new IllegalStateException("cannot get stats for " + this);
