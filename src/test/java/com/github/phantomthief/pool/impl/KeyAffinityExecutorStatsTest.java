@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.phantomthief.pool.KeyAffinityExecutor;
 import com.github.phantomthief.pool.KeyAffinityExecutorStats;
+import com.github.phantomthief.pool.KeyAffinityExecutorStats.SingleThreadPoolStats;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 /**
@@ -52,9 +53,12 @@ class KeyAffinityExecutorStatsTest {
             KeyAffinityExecutorStats stats = keyAffinityExecutor.stats();
             assertNotNull(stats);
             logger.info("stats:{}", stats);
-            assertEquals(0, stats.getActiveThreadCount());
-            assertEquals(10, stats.getParallelism());
-            
+            assertEquals(10, stats.getThreadPoolStats().size());
+            for (SingleThreadPoolStats threadPoolStat : stats.getThreadPoolStats()) {
+                assertEquals(0, threadPoolStat.getActiveThreadCount());
+                assertEquals(1, threadPoolStat.getParallelism());
+            }
+
             assertThrows(UnsupportedOperationException.class,
                     () -> keyAffinityExecutor.select(null));
             assertThrows(UnsupportedOperationException.class,
@@ -67,8 +71,38 @@ class KeyAffinityExecutorStatsTest {
             KeyAffinityExecutorStats stats = keyAffinityExecutor.stats();
             assertNotNull(stats);
             logger.info("stats:{}", stats);
-            assertEquals(1, stats.getActiveThreadCount());
-            assertEquals(10, stats.getParallelism());
+            assertEquals(10, stats.getThreadPoolStats().size());
+            assertEquals(1, stats.getThreadPoolStats().stream() //
+                    .mapToInt(SingleThreadPoolStats::getActiveThreadCount) //
+                    .sum());
+            assertEquals(0, stats.getThreadPoolStats().stream() //
+                    .mapToInt(SingleThreadPoolStats::getQueueSize) //
+                    .sum());
+            assertEquals(10, stats.getThreadPoolStats().stream() //
+                    .mapToInt(SingleThreadPoolStats::getParallelism) //
+                    .sum());
+        }
+        sleepUninterruptibly(1, SECONDS);
+
+        executor1.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
+        executor2.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
+        executor1.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
+        executor2.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
+
+        for (KeyAffinityExecutor<?> keyAffinityExecutor : all) {
+            KeyAffinityExecutorStats stats = keyAffinityExecutor.stats();
+            assertNotNull(stats);
+            logger.info("stats:{}", stats);
+            assertEquals(10, stats.getThreadPoolStats().size());
+            assertEquals(1, stats.getThreadPoolStats().stream() //
+                    .mapToInt(SingleThreadPoolStats::getActiveThreadCount) //
+                    .sum());
+            assertEquals(1, stats.getThreadPoolStats().stream() //
+                    .mapToInt(SingleThreadPoolStats::getQueueSize) //
+                    .sum());
+            assertEquals(10, stats.getThreadPoolStats().stream() //
+                    .mapToInt(SingleThreadPoolStats::getParallelism) //
+                    .sum());
         }
 
         executor1.close();

@@ -2,6 +2,8 @@ package com.github.phantomthief.pool.impl;
 
 import static com.github.phantomthief.pool.impl.KeyAffinityExecutorBuilder.ALL_EXECUTORS;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
@@ -9,6 +11,7 @@ import javax.annotation.Nullable;
 import com.github.phantomthief.pool.KeyAffinity;
 import com.github.phantomthief.pool.KeyAffinityExecutor;
 import com.github.phantomthief.pool.KeyAffinityExecutorStats;
+import com.github.phantomthief.pool.KeyAffinityExecutorStats.SingleThreadPoolStats;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 /**
@@ -34,16 +37,16 @@ class KeyAffinityExecutorImpl<K> extends LazyKeyAffinity<K, ListeningExecutorSer
     @Nullable
     @Override
     public KeyAffinityExecutorStats stats() {
-        int parallelism = 0;
-        int activeCount = 0;
+        List<SingleThreadPoolStats> list = new ArrayList<>();
         for (ListeningExecutorService executor : this) {
             if (executor instanceof ThreadListeningExecutorService) {
-                parallelism += ((ThreadListeningExecutorService) executor).getMaximumPoolSize();
-                activeCount += ((ThreadListeningExecutorService) executor).getActiveCount();
+                ThreadListeningExecutorService t1 = (ThreadListeningExecutorService) executor;
+                list.add(new SingleThreadPoolStats(t1.getMaximumPoolSize(), t1.getActiveCount(),
+                        t1.getQueueSize()));
             } else {
                 throw new IllegalStateException("cannot get stats for " + this);
             }
         }
-        return new KeyAffinityExecutorStats(parallelism, activeCount);
+        return new KeyAffinityExecutorStats(list);
     }
 }
