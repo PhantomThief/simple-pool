@@ -15,6 +15,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.phantomthief.pool.KeyAffinityExecutor;
 import com.github.phantomthief.pool.KeyAffinityExecutorStats;
@@ -25,6 +27,9 @@ import com.google.common.util.concurrent.ListeningExecutorService;
  * Created on 2018-11-29.
  */
 class KeyAffinityExecutorStatsTest {
+
+    private static final Logger logger = LoggerFactory
+            .getLogger(KeyAffinityExecutorStatsTest.class);
 
     @Test
     void test() throws Exception {
@@ -46,6 +51,7 @@ class KeyAffinityExecutorStatsTest {
             assertEquals(10, exeList.size());
             KeyAffinityExecutorStats stats = keyAffinityExecutor.stats();
             assertNotNull(stats);
+            logger.info("stats:{}", stats);
             assertEquals(0, stats.getActiveThreadCount());
             assertEquals(10, stats.getParallelism());
             
@@ -60,6 +66,7 @@ class KeyAffinityExecutorStatsTest {
         for (KeyAffinityExecutor<?> keyAffinityExecutor : all) {
             KeyAffinityExecutorStats stats = keyAffinityExecutor.stats();
             assertNotNull(stats);
+            logger.info("stats:{}", stats);
             assertEquals(1, stats.getActiveThreadCount());
             assertEquals(10, stats.getParallelism());
         }
