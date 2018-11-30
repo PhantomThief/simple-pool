@@ -1,17 +1,22 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.github.phantomthief.pool.impl.KeyAffinityExecutorForStats.wrapStats;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
+import static java.util.Collections.unmodifiableCollection;
 import static java.util.concurrent.TimeUnit.DAYS;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Supplier;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 
-import com.github.phantomthief.pool.KeyAffinity;
 import com.github.phantomthief.pool.KeyAffinityExecutor;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -22,6 +27,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class KeyAffinityExecutorBuilder {
 
+    static final Map<KeyAffinityExecutor<?>, KeyAffinityExecutor<?>> ALL_EXECUTORS = new ConcurrentHashMap<>();
     private final KeyAffinityBuilder<ListeningExecutorService> builder = new KeyAffinityBuilder<>();
 
     private boolean shutdownAfterClose = true;
@@ -32,7 +38,9 @@ public class KeyAffinityExecutorBuilder {
             builder.depose(it -> shutdownAndAwaitTermination(it, 1, DAYS));
         }
         builder.ensure();
-        return new ExecutorImpl<>(builder::buildInner);
+        KeyAffinityExecutorImpl<K> result = new KeyAffinityExecutorImpl<>(builder::buildInner);
+        ALL_EXECUTORS.put(result, wrapStats(result));
+        return result;
     }
 
     /**
@@ -63,6 +71,8 @@ public class KeyAffinityExecutorBuilder {
             ExecutorService executor = factory.get();
             if (executor instanceof ListeningExecutorService) {
                 return (ListeningExecutorService) executor;
+            } else if (executor instanceof ThreadPoolExecutor) {
+                return new ThreadListeningExecutorService((ThreadPoolExecutor) executor);
             } else {
                 return listeningDecorator(executor);
             }
@@ -77,11 +87,7 @@ public class KeyAffinityExecutorBuilder {
         return this;
     }
 
-    private class ExecutorImpl<K> extends LazyKeyAffinity<K, ListeningExecutorService> implements
-                              KeyAffinityExecutor<K> {
-
-        ExecutorImpl(Supplier<KeyAffinity<K, ListeningExecutorService>> factory) {
-            super(factory);
-        }
+    public static Collection<KeyAffinityExecutor<?>> getAllExecutors() {
+        return unmodifiableCollection(ALL_EXECUTORS.values());
     }
 }
