@@ -7,6 +7,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -47,6 +48,11 @@ class KeyAffinityExecutorStatsTest {
             assertNotNull(stats);
             assertEquals(0, stats.getActiveThreadCount());
             assertEquals(10, stats.getParallelism());
+            
+            assertThrows(UnsupportedOperationException.class,
+                    () -> keyAffinityExecutor.select(null));
+            assertThrows(UnsupportedOperationException.class,
+                    () -> keyAffinityExecutor.finishCall(null));
         }
 
         executor1.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
