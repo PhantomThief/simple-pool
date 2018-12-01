@@ -31,11 +31,14 @@ public class KeyAffinityExecutorStats {
         private final int parallelism;
         private final int activeThreadCount;
         private final int queueSize;
+        private final int queueRemainingCapacity;
 
-        public SingleThreadPoolStats(int parallelism, int activeThreadCount, int queueSize) {
+        public SingleThreadPoolStats(int parallelism, int activeThreadCount, int queueSize,
+                int queueRemainingCapacity) {
             this.parallelism = parallelism;
             this.activeThreadCount = activeThreadCount;
             this.queueSize = queueSize;
+            this.queueRemainingCapacity = queueRemainingCapacity;
         }
 
         public int getParallelism() {
@@ -50,12 +53,17 @@ public class KeyAffinityExecutorStats {
             return queueSize;
         }
 
+        public int getQueueRemainingCapacity() {
+            return queueRemainingCapacity;
+        }
+
         @Override
         public String toString() {
             return toStringHelper(this)
                     .add("parallelism", parallelism)
                     .add("activeThreadCount", activeThreadCount)
                     .add("queueSize", queueSize)
+                    .add("queueRemainingCapacity", queueRemainingCapacity)
                     .toString();
         }
     }

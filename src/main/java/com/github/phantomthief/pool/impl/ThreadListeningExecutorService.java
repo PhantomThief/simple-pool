@@ -37,4 +37,8 @@ class ThreadListeningExecutorService extends ForwardingListeningExecutorService 
     public int getQueueSize() {
         return threadPoolExecutor.getQueue().size();
     }
+
+    public int getQueueRemainingCapacity() {
+        return threadPoolExecutor.getQueue().remainingCapacity();
+    }
 }

@@ -1,5 +1,6 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.github.phantomthief.pool.KeyAffinityExecutor.DEFAULT_QUEUE_SIZE;
 import static com.github.phantomthief.pool.KeyAffinityExecutor.allExecutorsForStats;
 import static com.github.phantomthief.pool.KeyAffinityExecutor.newSerializingExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
@@ -81,6 +82,9 @@ class KeyAffinityExecutorStatsTest {
             assertEquals(10, stats.getThreadPoolStats().stream() //
                     .mapToInt(SingleThreadPoolStats::getParallelism) //
                     .sum());
+            assertEquals(DEFAULT_QUEUE_SIZE * 10, stats.getThreadPoolStats().stream() //
+                    .mapToInt(SingleThreadPoolStats::getQueueRemainingCapacity) //
+                    .sum());
         }
         sleepUninterruptibly(1, SECONDS);
 
@@ -102,6 +106,9 @@ class KeyAffinityExecutorStatsTest {
                     .sum());
             assertEquals(10, stats.getThreadPoolStats().stream() //
                     .mapToInt(SingleThreadPoolStats::getParallelism) //
+                    .sum());
+            assertEquals(DEFAULT_QUEUE_SIZE * 10 - 1, stats.getThreadPoolStats().stream() //
+                    .mapToInt(SingleThreadPoolStats::getQueueRemainingCapacity) //
                     .sum());
         }
 

@@ -42,7 +42,7 @@ class KeyAffinityExecutorImpl<K> extends LazyKeyAffinity<K, ListeningExecutorSer
             if (executor instanceof ThreadListeningExecutorService) {
                 ThreadListeningExecutorService t1 = (ThreadListeningExecutorService) executor;
                 list.add(new SingleThreadPoolStats(t1.getMaximumPoolSize(), t1.getActiveCount(),
-                        t1.getQueueSize()));
+                        t1.getQueueSize(), t1.getQueueRemainingCapacity()));
             } else {
                 throw new IllegalStateException("cannot get stats for " + this);
             }
