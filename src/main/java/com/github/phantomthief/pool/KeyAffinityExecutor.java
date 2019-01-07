@@ -48,7 +48,7 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
 
     /**
      * @param parallelism max concurrency for task submitted.
-     * @param queueBufferSize max queue size for every executor, 0 means unbounded queue.
+     * @param queueBufferSize max queue size for every executor, 0 means unbounded queue(DANGEROUS).
      * @param threadName see {@link ThreadFactoryBuilder#setNameFormat(String)}
      */
     @Nonnull
