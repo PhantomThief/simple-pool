@@ -18,8 +18,8 @@ class TestStats {
 
     @Test
     void testStats() {
-        Pool<Object> pool = ConcurrencyAwarePool.builder() //
-                .simpleThresholdStrategy(1, 0.7) //
+        Pool<Object> pool = ConcurrencyAwarePool.builder()
+                .simpleThresholdStrategy(1, 0.7)
                 .build(String::new);
         assertNull(pool.getStats(CURRENT_COUNT));
         pool.run(System.out::println);

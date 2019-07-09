@@ -56,8 +56,8 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
     private final List<CounterWrapper> currentAvailable;
 
     private final ScheduledExecutorService scheduledExecutor = newSingleThreadScheduledExecutor(
-            new ThreadFactoryBuilder() //
-                    .setNameFormat("concurrency-pool-adjust-%d") //
+            new ThreadFactoryBuilder()
+                    .setNameFormat("concurrency-pool-adjust-%d")
                     .build());
 
     private final Map<StatsKey<?>, Supplier<?>> stats;
@@ -167,9 +167,9 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
         CounterWrapper counterWrapper;
         do {
             try {
-                counterWrapper = currentAvailable.stream() //
-                        .filter(it -> !it.isClosing()) //
-                        .min(comparingInt(CounterWrapper::currentConcurrency)) //
+                counterWrapper = currentAvailable.stream()
+                        .filter(it -> !it.isClosing())
+                        .min(comparingInt(CounterWrapper::currentConcurrency))
                         .orElseThrow(() -> new IllegalStateException("pool is closed."));
                 break;
             } catch (ConcurrentModificationException e) {
@@ -185,9 +185,9 @@ public class ConcurrencyAwarePool<T> implements Pool<T> {
         checkNotNull(key);
         if (key instanceof SimpleStatsKey) {
             SimpleStatsKey<V> simpleStatsKey = (SimpleStatsKey<V>) key;
-            return ofNullable(stats.get(key)) //
-                    .map(Supplier::get) //
-                    .map(simpleStatsKey::cast) //
+            return ofNullable(stats.get(key))
+                    .map(Supplier::get)
+                    .map(simpleStatsKey::cast)
                     .orElse(null);
         } else {
             return null;

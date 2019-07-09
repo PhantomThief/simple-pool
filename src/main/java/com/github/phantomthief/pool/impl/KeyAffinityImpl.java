@@ -33,9 +33,9 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
     KeyAffinityImpl(@Nonnull Supplier<V> supplier, int count,
             @Nonnull ThrowableConsumer<V, Exception> deposeFunc, boolean usingRandom) {
         this.usingRandom = usingRandom;
-        this.all = IntStream.range(0, count) //
-                .mapToObj(it -> supplier.get()) //
-                .map(ValueRef::new) //
+        this.all = IntStream.range(0, count)
+                .mapToObj(it -> supplier.get())
+                .map(ValueRef::new)
                 .collect(toList());
         this.deposeFunc = checkNotNull(deposeFunc);
     }
@@ -48,9 +48,9 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
                 if (usingRandom) {
                     v = new KeyRef(all.get(ThreadLocalRandom.current().nextInt(all.size())));
                 } else {
-                    v = all.stream() //
-                            .min(comparingInt(ValueRef::concurrency)) //
-                            .map(KeyRef::new) //
+                    v = all.stream()
+                            .min(comparingInt(ValueRef::concurrency))
+                            .map(KeyRef::new)
                             .orElseThrow(IllegalStateException::new);
                 }
             }

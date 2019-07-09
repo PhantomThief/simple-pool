@@ -73,17 +73,17 @@ class KeyAffinityExecutorStatsTest {
             assertNotNull(stats);
             logger.info("stats:{}", stats);
             assertEquals(10, stats.getThreadPoolStats().size());
-            assertEquals(1, stats.getThreadPoolStats().stream() //
-                    .mapToInt(SingleThreadPoolStats::getActiveThreadCount) //
+            assertEquals(1, stats.getThreadPoolStats().stream()
+                    .mapToInt(SingleThreadPoolStats::getActiveThreadCount)
                     .sum());
-            assertEquals(0, stats.getThreadPoolStats().stream() //
-                    .mapToInt(SingleThreadPoolStats::getQueueSize) //
+            assertEquals(0, stats.getThreadPoolStats().stream()
+                    .mapToInt(SingleThreadPoolStats::getQueueSize)
                     .sum());
-            assertEquals(10, stats.getThreadPoolStats().stream() //
-                    .mapToInt(SingleThreadPoolStats::getParallelism) //
+            assertEquals(10, stats.getThreadPoolStats().stream()
+                    .mapToInt(SingleThreadPoolStats::getParallelism)
                     .sum());
-            assertEquals(DEFAULT_QUEUE_SIZE * 10, stats.getThreadPoolStats().stream() //
-                    .mapToInt(SingleThreadPoolStats::getQueueRemainingCapacity) //
+            assertEquals(DEFAULT_QUEUE_SIZE * 10, stats.getThreadPoolStats().stream()
+                    .mapToInt(SingleThreadPoolStats::getQueueRemainingCapacity)
                     .sum());
         }
         sleepUninterruptibly(1, SECONDS);
@@ -98,17 +98,17 @@ class KeyAffinityExecutorStatsTest {
             assertNotNull(stats);
             logger.info("stats:{}", stats);
             assertEquals(10, stats.getThreadPoolStats().size());
-            assertEquals(1, stats.getThreadPoolStats().stream() //
-                    .mapToInt(SingleThreadPoolStats::getActiveThreadCount) //
+            assertEquals(1, stats.getThreadPoolStats().stream()
+                    .mapToInt(SingleThreadPoolStats::getActiveThreadCount)
                     .sum());
-            assertEquals(1, stats.getThreadPoolStats().stream() //
-                    .mapToInt(SingleThreadPoolStats::getQueueSize) //
+            assertEquals(1, stats.getThreadPoolStats().stream()
+                    .mapToInt(SingleThreadPoolStats::getQueueSize)
                     .sum());
-            assertEquals(10, stats.getThreadPoolStats().stream() //
-                    .mapToInt(SingleThreadPoolStats::getParallelism) //
+            assertEquals(10, stats.getThreadPoolStats().stream()
+                    .mapToInt(SingleThreadPoolStats::getParallelism)
                     .sum());
-            assertEquals(DEFAULT_QUEUE_SIZE * 10 - 1, stats.getThreadPoolStats().stream() //
-                    .mapToInt(SingleThreadPoolStats::getQueueRemainingCapacity) //
+            assertEquals(DEFAULT_QUEUE_SIZE * 10 - 1, stats.getThreadPoolStats().stream()
+                    .mapToInt(SingleThreadPoolStats::getQueueRemainingCapacity)
                     .sum());
         }
 

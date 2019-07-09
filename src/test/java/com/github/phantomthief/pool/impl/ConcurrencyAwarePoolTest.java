@@ -63,12 +63,12 @@ class ConcurrencyAwarePoolTest {
             }
         }, 50, 50, MILLISECONDS);
 
-        Pool<Executor> pool = ConcurrencyAwarePool.<Executor> builder() //
-                .destroy(Executor::close) //
-                .maxSize(maxCount) //
-                .minIdle(minIdleCount) //
-                .evaluatePeriod(ofSeconds(1)) //
-                .simpleThresholdStrategy(extendThreshold, shrinkThreshold) //
+        Pool<Executor> pool = ConcurrencyAwarePool.<Executor> builder()
+                .destroy(Executor::close)
+                .maxSize(maxCount)
+                .minIdle(minIdleCount)
+                .evaluatePeriod(ofSeconds(1))
+                .simpleThresholdStrategy(extendThreshold, shrinkThreshold)
                 .build(Executor::new);
         logger.info("after create pool.");
         pool.run(o -> {});
@@ -111,7 +111,7 @@ class ConcurrencyAwarePoolTest {
 
     @Test
     void testIllegal() {
-        Pool<String> pool = ConcurrencyAwarePool.<String> builder() //
+        Pool<String> pool = ConcurrencyAwarePool.<String> builder()
                 .build(() -> "test");
         pool.run(s -> logger.info("{}", s));
         pool.close();

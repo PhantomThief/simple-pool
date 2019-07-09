@@ -19,9 +19,9 @@ class SharedResource {
 
     private static final class LazyHolder {
 
-        private static final Executor EXECUTOR = newCachedThreadPool(new ThreadFactoryBuilder() //
-                .setNameFormat("simple-pool-cleanup-%d") //
-                .setPriority(MIN_PRIORITY) //
+        private static final Executor EXECUTOR = newCachedThreadPool(new ThreadFactoryBuilder()
+                .setNameFormat("simple-pool-cleanup-%d")
+                .setPriority(MIN_PRIORITY)
                 .build());
     }
 }

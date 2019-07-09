@@ -26,8 +26,8 @@ class SimpleConcurrencyAdjustStrategyTest {
 
         // idle to shrink
         ConcurrencyInfo toEvict = new MyConcurrencyInfo(3);
-        adjust = strategy.adjust(of( //
-                new MyConcurrencyInfo(4), //
+        adjust = strategy.adjust(of(
+                new MyConcurrencyInfo(4),
                 toEvict));
         assertNotNull(adjust);
         assertTrue(adjust.getCreate() == 0);
@@ -35,18 +35,18 @@ class SimpleConcurrencyAdjustStrategyTest {
         assertTrue(toEvict == adjust.getEvict().iterator().next());
 
         strategy = new SimpleConcurrencyAdjustStrategy(10, 0.9, 1, 1);
-        adjust = strategy.adjust(of( //
-                new MyConcurrencyInfo(9), //
-                new MyConcurrencyInfo(9), //
-                new MyConcurrencyInfo(8) //
+        adjust = strategy.adjust(of(
+                new MyConcurrencyInfo(9),
+                new MyConcurrencyInfo(9),
+                new MyConcurrencyInfo(8)
         ));
         assertNull(adjust);
 
         toEvict = new MyConcurrencyInfo(1);
-        adjust = strategy.adjust(of( //
-                new MyConcurrencyInfo(9), //
-                new MyConcurrencyInfo(8), //
-                toEvict //
+        adjust = strategy.adjust(of(
+                new MyConcurrencyInfo(9),
+                new MyConcurrencyInfo(8),
+                toEvict
         ));
         assertNotNull(adjust);
         assertTrue(adjust.getCreate() == 0);
@@ -56,7 +56,7 @@ class SimpleConcurrencyAdjustStrategyTest {
         adjust = strategy.adjust(of(new MyConcurrencyInfo(1)));
         assertNull(adjust);
 
-        adjust = strategy.adjust(of( //
+        adjust = strategy.adjust(of(
                 new MyConcurrencyInfo(9), new MyConcurrencyInfo(10)));
         assertNull(adjust);
     }

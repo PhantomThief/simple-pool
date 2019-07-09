@@ -28,9 +28,9 @@ class KeyAffinityTest {
 
     @BeforeEach
     void setUp() {
-        keyAffinity = KeyAffinity.<String> newBuilder() //
-                .count(10) //
-                .factory(() -> "c:" + ThreadLocalRandom.current().nextInt(100)) //
+        keyAffinity = KeyAffinity.<String> newBuilder()
+                .count(10)
+                .factory(() -> "c:" + ThreadLocalRandom.current().nextInt(100))
                 .build();
     }
 
@@ -40,7 +40,7 @@ class KeyAffinityTest {
         Map<Integer, String> firstMapping = new ConcurrentHashMap<>();
         for (int i = 0; i < 20; i++) {
             int j = i;
-            executorService.execute(() -> { //
+            executorService.execute(() -> {
                 keyAffinity.run(j, v -> {
                     firstMapping.put(j, v);
                     sleepUninterruptibly(10, SECONDS);

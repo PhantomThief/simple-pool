@@ -54,12 +54,12 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
     @Nonnull
     static <K> KeyAffinityExecutor<K> newSerializingExecutor(int parallelism, int queueBufferSize,
             String threadName) {
-        return newKeyAffinityExecutor() //
-                .count(parallelism) //
+        return newKeyAffinityExecutor()
+                .count(parallelism)
                 .executor(new Supplier<ExecutorService>() {
 
-                    private final ThreadFactory threadFactory = new ThreadFactoryBuilder() //
-                            .setNameFormat(threadName) //
+                    private final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                            .setNameFormat(threadName)
                             .build();
 
                     @Override
@@ -84,7 +84,7 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
                         }
                         return new ThreadPoolExecutor(1, 1, 0L, MILLISECONDS, queue, threadFactory);
                     }
-                }) //
+                })
                 .build();
     }
 

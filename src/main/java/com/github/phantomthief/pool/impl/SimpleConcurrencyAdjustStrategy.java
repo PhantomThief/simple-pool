@@ -46,9 +46,9 @@ class SimpleConcurrencyAdjustStrategy implements ConcurrencyAdjustStrategy {
     @Nullable
     @Override
     public AdjustResult adjust(@Nonnull Collection<? extends ConcurrencyInfo> current) {
-        List<? extends ConcurrencyInfo> minList = current.stream() //
-                .sorted(comparingInt(ConcurrencyInfo::currentConcurrency)) //
-                .limit(2) //
+        List<? extends ConcurrencyInfo> minList = current.stream()
+                .sorted(comparingInt(ConcurrencyInfo::currentConcurrency))
+                .limit(2)
                 .collect(toList());
         ConcurrencyInfo first = minList.get(0);
         if (first.currentConcurrency() >= extendThreshold) {

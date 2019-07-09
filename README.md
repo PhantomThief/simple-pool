@@ -17,12 +17,12 @@ A simple pool library for Java
 ```
 
 ```Java	
-Pool<MyObject> pool = ConcurrencyAwarePool.<MyObject> builder() //
-                .destroy(MyObject::close) //
-                .maxSize(30) //
-                .minIdle(1) //
-                .evaluatePeriod(ofSeconds(2)) //
-                .simpleThresholdStrategy(10, 0.8) //
+Pool<MyObject> pool = ConcurrencyAwarePool.<MyObject> builder()
+                .destroy(MyObject::close)
+                .maxSize(30)
+                .minIdle(1)
+                .evaluatePeriod(ofSeconds(2))
+                .simpleThresholdStrategy(10, 0.8)
                 .build(MyObject::new);
 
 MyResult myResult = pool.supply(myObject-> myObject.doSomething());

@@ -72,8 +72,8 @@ class KeyAffinityExecutorTest {
     void testExecuteEx() throws InterruptedException {
         AtomicReference<Throwable> throwable = new AtomicReference<>();
         KeyAffinityExecutor<Integer> keyExecutor = newKeyAffinityExecutor()
-                .count(20) //
-                .executor(() -> newSingleThreadExecutor(new ThreadFactoryBuilder() //
+                .count(20)
+                .executor(() -> newSingleThreadExecutor(new ThreadFactoryBuilder()
                         .setUncaughtExceptionHandler((t, e) -> {
                             throwable.set(e);
                             synchronized (throwable) {
