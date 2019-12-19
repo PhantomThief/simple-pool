@@ -1,8 +1,10 @@
 package com.github.phantomthief.pool.impl;
 
 import static com.google.common.collect.ImmutableSet.of;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -22,7 +24,7 @@ class SimpleConcurrencyAdjustStrategyTest {
         // heavy to expend
         AdjustResult adjust = strategy.adjust(of(new MyConcurrencyInfo(20)));
         assertNotNull(adjust);
-        assertTrue(adjust.getCreate() == 1);
+        assertEquals(1, adjust.getCreate());
 
         // idle to shrink
         ConcurrencyInfo toEvict = new MyConcurrencyInfo(3);
@@ -30,9 +32,9 @@ class SimpleConcurrencyAdjustStrategyTest {
                 new MyConcurrencyInfo(4),
                 toEvict));
         assertNotNull(adjust);
-        assertTrue(adjust.getCreate() == 0);
+        assertEquals(0, adjust.getCreate());
         assertNotNull(adjust.getEvict());
-        assertTrue(toEvict == adjust.getEvict().iterator().next());
+        assertSame(toEvict, adjust.getEvict().iterator().next());
 
         strategy = new SimpleConcurrencyAdjustStrategy(10, 0.9, 1, 1);
         adjust = strategy.adjust(of(
@@ -49,9 +51,9 @@ class SimpleConcurrencyAdjustStrategyTest {
                 toEvict
         ));
         assertNotNull(adjust);
-        assertTrue(adjust.getCreate() == 0);
+        assertEquals(0, adjust.getCreate());
         assertNotNull(adjust.getEvict());
-        assertTrue(toEvict == adjust.getEvict().iterator().next());
+        assertSame(toEvict, adjust.getEvict().iterator().next());
 
         adjust = strategy.adjust(of(new MyConcurrencyInfo(1)));
         assertNull(adjust);
@@ -73,7 +75,7 @@ class SimpleConcurrencyAdjustStrategyTest {
         assertNull(adjust);
         adjust = strategy.adjust(of(heavyOne));
         assertNotNull(adjust);
-        assertTrue(adjust.getCreate() == 1);
+        assertEquals(1, adjust.getCreate());
         adjust = strategy.adjust(of(heavyOne));
         assertNull(adjust);
 
@@ -91,9 +93,9 @@ class SimpleConcurrencyAdjustStrategyTest {
 
         adjust = strategy.adjust(of(notReached, toEvict));
         assertNotNull(adjust);
-        assertTrue(adjust.getCreate() == 0);
+        assertEquals(0, adjust.getCreate());
         assertNotNull(adjust.getEvict());
-        assertTrue(toEvict == adjust.getEvict().iterator().next());
+        assertSame(toEvict, adjust.getEvict().iterator().next());
 
         adjust = strategy.adjust(of(notReached, toEvict));
         assertNull(adjust);

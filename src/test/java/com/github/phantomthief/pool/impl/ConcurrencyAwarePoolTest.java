@@ -9,6 +9,7 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -85,7 +86,7 @@ class ConcurrencyAwarePoolTest {
         logger.info("after 1 round.");
         sleepUninterruptibly(15, SECONDS);
         logger.info("executor:{}", executorSet.size());
-        assertTrue(executorSet.size() == minIdleCount);
+        assertEquals(executorSet.size(), minIdleCount);
 
         executorService = newFixedThreadPool(300);
         for (int i = 0; i < 3000; i++) {
@@ -105,7 +106,7 @@ class ConcurrencyAwarePoolTest {
         closing = true;
         pool.close();
         logger.info("after closed...");
-        assertTrue(executorSet.size() == 0);
+        assertEquals(0, executorSet.size());
         logger.info("after 2 round.");
     }
 
