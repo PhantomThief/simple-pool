@@ -3,6 +3,7 @@ package com.github.phantomthief.pool.impl;
 import static com.github.phantomthief.pool.KeyAffinityExecutor.DEFAULT_QUEUE_SIZE;
 import static com.github.phantomthief.pool.KeyAffinityExecutor.allExecutorsForStats;
 import static com.github.phantomthief.pool.KeyAffinityExecutor.newSerializingExecutor;
+import static com.github.phantomthief.pool.impl.KeyAffinityExecutorBuilder.clearAllExecutors;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +36,7 @@ class KeyAffinityExecutorStatsTest {
 
     @Test
     void test() throws Exception {
+        clearAllExecutors();
         KeyAffinityExecutor<Integer> executor1 = newSerializingExecutor(10, "test");
         KeyAffinityExecutor<Integer> executor2 = newSerializingExecutor(10, "test-2");
         Collection<KeyAffinityExecutor<?>> all = allExecutorsForStats();

@@ -18,6 +18,7 @@ import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 
 import com.github.phantomthief.pool.KeyAffinityExecutor;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 /**
@@ -89,5 +90,10 @@ public class KeyAffinityExecutorBuilder {
 
     public static Collection<KeyAffinityExecutor<?>> getAllExecutors() {
         return unmodifiableCollection(ALL_EXECUTORS.values());
+    }
+
+    @VisibleForTesting
+    static void clearAllExecutors() {
+        ALL_EXECUTORS.clear();
     }
 }
