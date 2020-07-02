@@ -12,6 +12,7 @@
 
         <junit.version>5.6.2</junit.version>
         <logback-classic.version>1.1.8</logback-classic.version>
+        <jmh.version>1.23</jmh.version>
 
         <coveralls-maven-plugin.version>4.3.0</coveralls-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.5</jacoco-maven-plugin.version>
@@ -92,6 +93,18 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback-classic.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
