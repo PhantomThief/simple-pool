@@ -21,10 +21,11 @@ import org.openjdk.jmh.annotations.Warmup;
 import com.github.phantomthief.pool.KeyAffinityExecutor;
 
 /**
- * Benchmark                                 Mode  Cnt        Score         Error  Units
- * KeyAffinityExecutorBenchmark.test        thrpt    5  2326708.508 ±  402296.531  ops/s
- * KeyAffinityExecutorBenchmark.testRandom  thrpt    5  3756972.788 ±  580207.290  ops/s
- * KeyAffinityExecutorBenchmark.testJdk     thrpt    5  7044631.849 ± 5358207.213  ops/s
+ * Benchmark                                  Mode  Cnt        Score        Error  Units
+ * KeyAffinityExecutorBenchmark.test         thrpt    5  2344169.134 ± 186206.161  ops/s
+ * KeyAffinityExecutorBenchmark.testDynamic  thrpt    5  2478918.267 ± 250481.212  ops/s
+ * KeyAffinityExecutorBenchmark.testJdk      thrpt    5  7526776.023 ± 278178.966  ops/s
+ * KeyAffinityExecutorBenchmark.testRandom   thrpt    5  3869465.719 ± 131909.710  ops/s
  *
  * @author w.vela
  * Created on 2020-07-02.
@@ -40,8 +41,8 @@ public class KeyAffinityExecutorBenchmark {
 
     private final KeyAffinityExecutor<Integer> executor1 = newSerializingExecutor(10, "test");
     private final KeyAffinityExecutor<Integer> executor2 = newSerializingExecutor(30, "test2");
-
     private final Executor executor3 = Executors.newFixedThreadPool(10);
+    private final KeyAffinityExecutor<Integer> executor4 = newSerializingExecutor(() -> 30, 100, "test3");
 
     @Benchmark
     public void test() {
@@ -56,5 +57,10 @@ public class KeyAffinityExecutorBenchmark {
     @Benchmark
     public void testJdk() {
         executor3.execute(() -> {});
+    }
+
+    @Benchmark
+    public void testDynamic() {
+        executor4.executeEx(ThreadLocalRandom.current().nextInt(100), () -> {});
     }
 }

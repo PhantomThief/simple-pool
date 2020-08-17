@@ -1,8 +1,12 @@
 package com.github.phantomthief.pool.impl;
 
+import static com.github.phantomthief.pool.KeyAffinityExecutorUtils.RANDOM_THRESHOLD;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.IntPredicate;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import javax.annotation.CheckReturnValue;
@@ -20,12 +24,11 @@ import com.github.phantomthief.util.ThrowableConsumer;
 @NotThreadSafe
 public class KeyAffinityBuilder<V> {
 
-    private static final int RANDOM_THRESHOLD = 20;
-
     private Supplier<V> factory;
-    private int count;
+    private IntSupplier count;
     private ThrowableConsumer<V, Exception> depose;
-    private Boolean usingRandom;
+    private IntPredicate usingRandom;
+    private BooleanSupplier counterChecker;
 
     public <K> KeyAffinity<K, V> build() {
         ensure();
@@ -33,57 +36,87 @@ public class KeyAffinityBuilder<V> {
     }
 
     <K> KeyAffinity<K, V> buildInner() {
-        return new KeyAffinityImpl<>(factory, count, depose, usingRandom);
+        return new KeyAffinityImpl<>(factory, count, depose, usingRandom, counterChecker);
     }
 
     void ensure() {
-        if (count <= 0) {
+        if (count == null || count.getAsInt() <= 0) {
             throw new IllegalArgumentException("no count found.");
         }
+        if (counterChecker == null) {
+            counterChecker = () -> true;
+        }
         if (depose == null) {
-            depose = it -> {};
+            depose = it -> { };
         }
         if (usingRandom == null) {
-            usingRandom = count > RANDOM_THRESHOLD;
+            usingRandom = it -> it > RANDOM_THRESHOLD;
         }
     }
 
     @SuppressWarnings("unchecked")
     @CheckReturnValue
     @Nonnull
-    public <T extends KeyAffinityBuilder<V>> T factory(@Nonnull Supplier<V> factory) {
-        this.factory = checkNotNull(factory);
+    public <T extends KeyAffinityBuilder<V>> T counterChecker(@Nonnull BooleanSupplier value) {
+        this.counterChecker = checkNotNull(value);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @CheckReturnValue
+    @Nonnull
+    public <T extends KeyAffinityBuilder<V>> T factory(@Nonnull Supplier<V> value) {
+        this.factory = checkNotNull(value);
         return (T) this;
     }
 
     /**
      * whether to use random strategy or less concurrency strategy
      * @param value {@code true} is random strategy and {@code false} is less concurrency strategy
-     * default value is {@code true} is {@link #count} larger than {@link #RANDOM_THRESHOLD}
+     * default value is {@code true} is {@link #count} larger than {@link com.github.phantomthief.pool.KeyAffinityExecutorUtils#RANDOM_THRESHOLD}
      */
     @SuppressWarnings("unchecked")
     @CheckReturnValue
     @Nonnull
     public <T extends KeyAffinityBuilder<V>> T usingRandom(boolean value) {
-        this.usingRandom = value;
+        return usingRandom(it -> value);
+    }
+
+    /**
+     * whether to use random strategy or less concurrency strategy
+     * @param value {@code true} is random strategy and {@code false} is less concurrency strategy
+     * default value is {@code true} is {@link #count} larger than {@link com.github.phantomthief.pool.KeyAffinityExecutorUtils#RANDOM_THRESHOLD}
+     */
+    @SuppressWarnings("unchecked")
+    @CheckReturnValue
+    @Nonnull
+    public <T extends KeyAffinityBuilder<V>> T usingRandom(@Nonnull IntPredicate value) {
+        this.usingRandom = checkNotNull(value);
         return (T) this;
     }
 
     @SuppressWarnings("unchecked")
     @CheckReturnValue
     @Nonnull
-    public <T extends KeyAffinityBuilder<V>> T count(@Nonnegative int count) {
-        checkArgument(count > 0);
-        this.count = count;
+    public <T extends KeyAffinityBuilder<V>> T count(@Nonnegative int value) {
+        checkArgument(value > 0);
+        this.count = () -> value;
         return (T) this;
     }
 
     @SuppressWarnings("unchecked")
     @CheckReturnValue
     @Nonnull
-    public <T extends KeyAffinityBuilder<V>> T
-            depose(@Nonnegative ThrowableConsumer<V, Exception> depose) {
-        this.depose = checkNotNull(depose);
+    public <T extends KeyAffinityBuilder<V>> T count(@Nonnull IntSupplier value) {
+        this.count = checkNotNull(value);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @CheckReturnValue
+    @Nonnull
+    public <T extends KeyAffinityBuilder<V>> T depose(@Nonnegative ThrowableConsumer<V, Exception> value) {
+        this.depose = checkNotNull(value);
         return (T) this;
     }
 }

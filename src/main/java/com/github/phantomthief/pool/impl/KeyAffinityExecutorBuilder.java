@@ -12,6 +12,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntPredicate;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import javax.annotation.CheckReturnValue;
@@ -31,10 +34,14 @@ public class KeyAffinityExecutorBuilder {
     static final Map<KeyAffinityExecutor<?>, KeyAffinityExecutor<?>> ALL_EXECUTORS = new ConcurrentHashMap<>();
     private final KeyAffinityBuilder<ListeningExecutorService> builder = new KeyAffinityBuilder<>();
 
+    private boolean usingDynamic = false;
     private boolean shutdownAfterClose = true;
 
     @Nonnull
     public <K> KeyAffinityExecutor<K> build() {
+        if (usingDynamic && !shutdownAfterClose) {
+            throw new IllegalStateException("cannot close shutdown after close when enable dynamic count.");
+        }
         if (shutdownAfterClose) {
             builder.depose(it -> shutdownAndAwaitTermination(it, 1, DAYS));
         }
@@ -42,6 +49,13 @@ public class KeyAffinityExecutorBuilder {
         KeyAffinityExecutorImpl<K> result = new KeyAffinityExecutorImpl<>(builder::buildInner);
         ALL_EXECUTORS.put(result, wrapStats(result));
         return result;
+    }
+
+    @CheckReturnValue
+    @Nonnull
+    public KeyAffinityExecutorBuilder counterChecker(BooleanSupplier value) {
+        builder.counterChecker(value);
+        return this;
     }
 
     /**
@@ -60,6 +74,16 @@ public class KeyAffinityExecutorBuilder {
     @CheckReturnValue
     @Nonnull
     public KeyAffinityExecutorBuilder usingRandom(boolean value) {
+        builder.usingRandom(value);
+        return this;
+    }
+
+    /**
+     * see {@link KeyAffinityBuilder#usingRandom(boolean)}
+     */
+    @CheckReturnValue
+    @Nonnull
+    public KeyAffinityExecutorBuilder usingRandom(IntPredicate value) {
         builder.usingRandom(value);
         return this;
     }
@@ -85,6 +109,14 @@ public class KeyAffinityExecutorBuilder {
     @Nonnull
     public KeyAffinityExecutorBuilder count(int count) {
         builder.count(count);
+        return this;
+    }
+
+    @CheckReturnValue
+    @Nonnull
+    public KeyAffinityExecutorBuilder count(IntSupplier count) {
+        builder.count(count);
+        usingDynamic = true;
         return this;
     }
 
