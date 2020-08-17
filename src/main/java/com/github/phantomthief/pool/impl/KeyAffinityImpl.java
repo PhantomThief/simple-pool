@@ -1,7 +1,6 @@
 package com.github.phantomthief.pool.impl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.Iterators.transform;
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.toCollection;
@@ -23,6 +22,9 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.phantomthief.pool.KeyAffinity;
 import com.github.phantomthief.util.ThrowableConsumer;
 
@@ -31,6 +33,8 @@ import com.github.phantomthief.util.ThrowableConsumer;
  * Created on 2018-02-08.
  */
 class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
+
+    private static final Logger logger = LoggerFactory.getLogger(KeyAffinityImpl.class);
 
     private final IntSupplier count;
     private final List<ValueRef> all;
@@ -129,8 +133,7 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
         try {
             deposeFunc.accept(remove.obj);
         } catch (Exception e) {
-            throwIfUnchecked(e);
-            throw new RuntimeException(e);
+            logger.error("", e);
         }
     }
 
