@@ -3,6 +3,7 @@ package com.github.phantomthief.pool.impl;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterators.transform;
 import static java.util.Comparator.comparingInt;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -124,7 +125,7 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
         while (remove.concurrency.get() > 0) {
             synchronized (all) {
                 try {
-                    all.wait();
+                    all.wait(SECONDS.toMillis(1));
                 } catch (InterruptedException e) {
                     // just ignore it.
                 }
@@ -157,7 +158,7 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
     public void close() throws Exception {
         synchronized (all) {
             while (all.stream().anyMatch(it -> it.concurrency.get() > 0)) {
-                all.wait();
+                all.wait(SECONDS.toMillis(1));
             }
         }
         for (ValueRef ref : all) {
