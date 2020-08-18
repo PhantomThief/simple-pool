@@ -68,11 +68,11 @@ class KeyAffinityExecutorDynamicTest {
         testKeyAffinity(count[0], keyExecutor);
         sleepUninterruptibly(5, SECONDS);
         assertEquals(5, shutdown[0]);
-        count[0] = 20;
+        count[0] = 15;
         testKeyAffinity(count[0], keyExecutor);
-        assertEquals(25, create[0]);
+        assertEquals(20, create[0]);
         keyExecutor.close();
-        assertEquals(30, shutdown[0]);
+        assertEquals(20, shutdown[0]);
     }
 
     @Test
@@ -98,7 +98,7 @@ class KeyAffinityExecutorDynamicTest {
                     assertTrue(add);
                     String e = currentThreadIdentity();
                     threads.add(e);
-                    sleepUninterruptibly(200, MILLISECONDS);
+                    sleepUninterruptibly(500, MILLISECONDS);
                     return e;
                 } catch (Throwable e) {
                     assertionError[0] = e;
