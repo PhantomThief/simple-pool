@@ -8,7 +8,7 @@
         <jsr305.version>3.0.2</jsr305.version>
         <slf4j-api.version>1.7.21</slf4j-api.version>
         <guava.version>28.1-jre</guava.version>
-        <more-lambdas.version>0.1.27</more-lambdas.version>
+        <more-lambdas.version>0.1.49</more-lambdas.version>
 
         <junit.version>5.6.2</junit.version>
         <logback-classic.version>1.1.8</logback-classic.version>

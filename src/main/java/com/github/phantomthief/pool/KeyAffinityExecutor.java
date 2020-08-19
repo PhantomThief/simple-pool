@@ -1,19 +1,16 @@
 package com.github.phantomthief.pool;
 
+import static com.github.phantomthief.pool.KeyAffinityExecutorUtils.RANDOM_THRESHOLD;
+import static com.github.phantomthief.pool.KeyAffinityExecutorUtils.executor;
 import static com.github.phantomthief.util.MoreReflection.logDeprecated;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -56,35 +53,22 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
             String threadName) {
         return newKeyAffinityExecutor()
                 .count(parallelism)
-                .executor(new Supplier<ExecutorService>() {
+                .executor(executor(threadName, queueBufferSize))
+                .build();
+    }
 
-                    private final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                            .setNameFormat(threadName)
-                            .build();
-
-                    @Override
-                    public ExecutorService get() {
-                        LinkedBlockingQueue<Runnable> queue;
-                        if (queueBufferSize > 0) {
-                            queue = new LinkedBlockingQueue<Runnable>(queueBufferSize) {
-
-                                @Override
-                                public boolean offer(Runnable e) {
-                                    try {
-                                        put(e);
-                                        return true;
-                                    } catch (InterruptedException ie) {
-                                        Thread.currentThread().interrupt();
-                                    }
-                                    return false;
-                                }
-                            };
-                        } else {
-                            queue = new LinkedBlockingQueue<>();
-                        }
-                        return new ThreadPoolExecutor(1, 1, 0L, MILLISECONDS, queue, threadFactory);
-                    }
-                })
+    /**
+     * @param parallelism max concurrency for task submitted.
+     * @param queueBufferSize max queue size for every executor, 0 means unbounded queue(DANGEROUS).
+     * @param threadName see {@link ThreadFactoryBuilder#setNameFormat(String)}
+     */
+    @Nonnull
+    static <K> KeyAffinityExecutor<K> newSerializingExecutor(IntSupplier parallelism, int queueBufferSize,
+            String threadName) {
+        return newKeyAffinityExecutor()
+                .count(parallelism)
+                .executor(executor(threadName, queueBufferSize))
+                .usingRandom(it -> it > RANDOM_THRESHOLD)
                 .build();
     }
 
