@@ -33,6 +33,25 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
 
     int DEFAULT_QUEUE_SIZE = 100;
 
+    /**
+     * 一般推荐使用其它几个 {@link #newSerializingExecutor} 重载版本，只有当需要定制具体参数时，才用本方法；
+     *
+     * 一个典型的使用方法是:
+     * <pre> {@code
+     * class MyClass {
+     *   private final KeyAffinityExecutor<Integer> keyExecutor = newKeyAffinityExecutor()
+     *                       .parallelism(10) // 设置并发度
+     *                       .executor(() -> new ExecutorWithStats(newSingleThreadExecutor())) // 工场方法
+     *                       .usingRandom(true) // 强制采用随机方式分配
+     *                       .build();
+     *   void foo(User user) {
+     *     Future<Integer> fansCount = keyExecutor.submit(user.getUserId(), () -> {
+     *       return fansService.getByUserId(user.getUserId());
+     *     });
+     *   }
+     * }
+     * }</pre>
+     */
     @Nonnull
     static KeyAffinityExecutorBuilder newKeyAffinityExecutor() {
         return new KeyAffinityExecutorBuilder();

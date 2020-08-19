@@ -59,7 +59,7 @@ class KeyAffinityExecutorDynamicTest {
             }
         }
         KeyAffinityExecutor<Integer> keyExecutor = newKeyAffinityExecutor()
-                .count(() -> count[0])
+                .parallelism(() -> count[0])
                 .counterChecker(() -> true)
                 .executor(() -> new ExecutorWithStats(newSingleThreadExecutor(new ThreadFactoryBuilder().build())))
                 .build();
@@ -82,7 +82,7 @@ class KeyAffinityExecutorDynamicTest {
         assertThrows(IllegalStateException.class, () ->
                 newKeyAffinityExecutor()
                         .shutdownExecutorAfterClose(false)
-                        .count(() -> 1)
+                        .parallelism(() -> 1)
                         .build());
     }
 

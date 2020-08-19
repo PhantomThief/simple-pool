@@ -99,10 +99,20 @@ public class KeyAffinityExecutorBuilder {
         return this;
     }
 
+    /**
+     * 建议使用 {@link #parallelism(int)}，语义更清晰
+     */
+    @Deprecated
     @CheckReturnValue
     @Nonnull
     public KeyAffinityExecutorBuilder count(int count) {
-        builder.count(count);
+        return parallelism(count);
+    }
+
+    @CheckReturnValue
+    @Nonnull
+    public KeyAffinityExecutorBuilder parallelism(int value) {
+        builder.count(value);
         return this;
     }
 
@@ -114,9 +124,19 @@ public class KeyAffinityExecutorBuilder {
         return this;
     }
 
+    /**
+     * 建议使用 {@link #parallelism(IntSupplier)}，语义更清晰
+     */
+    @Deprecated
     @CheckReturnValue
     @Nonnull
     public KeyAffinityExecutorBuilder count(IntSupplier count) {
+        return parallelism(count);
+    }
+
+    @CheckReturnValue
+    @Nonnull
+    public KeyAffinityExecutorBuilder parallelism(IntSupplier count) {
         builder.count(count);
         usingDynamic = true;
         SimpleRateLimiter rateLimiter = SimpleRateLimiter.create(1);
