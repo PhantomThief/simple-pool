@@ -21,6 +21,7 @@ import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 
 import com.github.phantomthief.pool.KeyAffinityExecutor;
+import com.github.phantomthief.util.SimpleRateLimiter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -49,13 +50,6 @@ public class KeyAffinityExecutorBuilder {
         KeyAffinityExecutorImpl<K> result = new KeyAffinityExecutorImpl<>(builder::buildInner);
         ALL_EXECUTORS.put(result, wrapStats(result));
         return result;
-    }
-
-    @CheckReturnValue
-    @Nonnull
-    public KeyAffinityExecutorBuilder counterChecker(BooleanSupplier value) {
-        builder.counterChecker(value);
-        return this;
     }
 
     /**
@@ -114,11 +108,22 @@ public class KeyAffinityExecutorBuilder {
 
     @CheckReturnValue
     @Nonnull
+    @VisibleForTesting
+    KeyAffinityExecutorBuilder counterChecker(BooleanSupplier value) {
+        builder.counterChecker(value);
+        return this;
+    }
+
+    @CheckReturnValue
+    @Nonnull
     public KeyAffinityExecutorBuilder count(IntSupplier count) {
         builder.count(count);
         usingDynamic = true;
+        SimpleRateLimiter rateLimiter = SimpleRateLimiter.create(1);
+        builder.counterChecker(rateLimiter::tryAcquire);
         return this;
     }
+
 
     public static Collection<KeyAffinityExecutor<?>> getAllExecutors() {
         return unmodifiableCollection(ALL_EXECUTORS.values());

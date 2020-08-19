@@ -30,11 +30,12 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 class KeyAffinityExecutorDynamicTest {
 
-    private static final int LOOP = 1000;
+    private static final int LOOP = 500;
 
     @Test
     void testDynamic() throws Throwable {
-        int[] count = {10};
+        KeyAffinityImpl.setSleepBeforeClose(0);
+        int[] count = {5};
         int[] create = {0};
         int[] shutdown = {0};
         class ExecutorWithStats extends ForwardingExecutorService {
@@ -59,20 +60,21 @@ class KeyAffinityExecutorDynamicTest {
         }
         KeyAffinityExecutor<Integer> keyExecutor = newKeyAffinityExecutor()
                 .count(() -> count[0])
+                .counterChecker(() -> true)
                 .executor(() -> new ExecutorWithStats(newSingleThreadExecutor(new ThreadFactoryBuilder().build())))
                 .build();
         assertEquals(0, create[0]);
         testKeyAffinity(count[0], keyExecutor);
-        assertEquals(10, create[0]);
-        count[0] = 5;
+        assertEquals(5, create[0]);
+        count[0] = 3;
         testKeyAffinity(count[0], keyExecutor);
-        sleepUninterruptibly(5, SECONDS);
-        assertEquals(5, shutdown[0]);
-        count[0] = 15;
+        sleepUninterruptibly(1, SECONDS);
+        assertEquals(2, shutdown[0]);
+        count[0] = 7;
         testKeyAffinity(count[0], keyExecutor);
-        assertEquals(20, create[0]);
+        assertEquals(9, create[0]);
         keyExecutor.close();
-        assertEquals(20, shutdown[0]);
+        assertEquals(9, shutdown[0]);
     }
 
     @Test
@@ -98,7 +100,7 @@ class KeyAffinityExecutorDynamicTest {
                     assertTrue(add);
                     String e = currentThreadIdentity();
                     threads.add(e);
-                    sleepUninterruptibly(500, MILLISECONDS);
+                    sleepUninterruptibly(100, MILLISECONDS);
                     return e;
                 } catch (Throwable e) {
                     assertionError[0] = e;

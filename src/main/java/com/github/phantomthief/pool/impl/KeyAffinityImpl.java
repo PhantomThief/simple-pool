@@ -2,7 +2,9 @@ package com.github.phantomthief.pool.impl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterators.transform;
+import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.util.Comparator.comparingInt;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
@@ -28,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.phantomthief.pool.KeyAffinity;
 import com.github.phantomthief.util.ThrowableConsumer;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * @author w.vela
@@ -36,6 +39,7 @@ import com.github.phantomthief.util.ThrowableConsumer;
 class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
 
     private static final Logger logger = LoggerFactory.getLogger(KeyAffinityImpl.class);
+    private static long sleepBeforeClose = SECONDS.toMillis(5);
 
     private final IntSupplier count;
     private final List<ValueRef> all;
@@ -113,6 +117,9 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
                     }
                 }
                 new Thread(() -> {
+                    if (sleepBeforeClose > 0) {
+                        sleepUninterruptibly(sleepBeforeClose, MILLISECONDS);
+                    }
                     for (ValueRef remove : toRemove) {
                         waitAndClose(remove);
                     }
@@ -202,6 +209,12 @@ class KeyAffinityImpl<K, V> implements KeyAffinity<K, V> {
         V ref() {
             return valueRef.obj;
         }
+    }
+
+    // for mock and test.
+    @VisibleForTesting
+    static void setSleepBeforeClose(long sleepBeforeClose) {
+        KeyAffinityImpl.sleepBeforeClose = sleepBeforeClose;
     }
 
     private class ValueRef {

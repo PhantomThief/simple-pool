@@ -22,7 +22,6 @@ import com.github.phantomthief.util.ThrowableRunnable;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
@@ -66,10 +65,8 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
     @Nonnull
     static <K> KeyAffinityExecutor<K> newSerializingExecutor(IntSupplier parallelism, int queueBufferSize,
             String threadName) {
-        RateLimiter rateLimiter = RateLimiter.create(1);
         return newKeyAffinityExecutor()
                 .count(parallelism)
-                .counterChecker(rateLimiter::tryAcquire)
                 .executor(executor(threadName, queueBufferSize))
                 .usingRandom(it -> it > RANDOM_THRESHOLD)
                 .build();

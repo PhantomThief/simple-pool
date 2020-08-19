@@ -16,6 +16,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import com.github.phantomthief.pool.KeyAffinity;
 import com.github.phantomthief.util.ThrowableConsumer;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * @author w.vela
@@ -57,7 +58,8 @@ public class KeyAffinityBuilder<V> {
     @SuppressWarnings("unchecked")
     @CheckReturnValue
     @Nonnull
-    public <T extends KeyAffinityBuilder<V>> T counterChecker(@Nonnull BooleanSupplier value) {
+    @VisibleForTesting
+    <T extends KeyAffinityBuilder<V>> T counterChecker(@Nonnull BooleanSupplier value) {
         this.counterChecker = checkNotNull(value);
         return (T) this;
     }
