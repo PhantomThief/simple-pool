@@ -71,12 +71,14 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
     static <K> KeyAffinityExecutor<K> newSerializingExecutor(int parallelism, int queueBufferSize,
             String threadName) {
         return newKeyAffinityExecutor()
-                .count(parallelism)
+                .parallelism(parallelism)
                 .executor(executor(threadName, queueBufferSize))
                 .build();
     }
 
     /**
+     * 本版本是 {@link #newSerializingExecutor(int, int, String)} 的 动态版本，可以动态设置并发度
+     *
      * @param parallelism max concurrency for task submitted.
      * @param queueBufferSize max queue size for every executor, 0 means unbounded queue(DANGEROUS).
      * @param threadName see {@link ThreadFactoryBuilder#setNameFormat(String)}
@@ -85,7 +87,7 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
     static <K> KeyAffinityExecutor<K> newSerializingExecutor(IntSupplier parallelism, int queueBufferSize,
             String threadName) {
         return newKeyAffinityExecutor()
-                .count(parallelism)
+                .parallelism(parallelism)
                 .executor(executor(threadName, queueBufferSize))
                 .usingRandom(it -> it > RANDOM_THRESHOLD)
                 .build();
