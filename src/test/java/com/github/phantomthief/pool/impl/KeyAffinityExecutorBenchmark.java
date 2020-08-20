@@ -42,7 +42,7 @@ public class KeyAffinityExecutorBenchmark {
     private final KeyAffinityExecutor<Integer> executor1 = newSerializingExecutor(10, "test");
     private final KeyAffinityExecutor<Integer> executor2 = newSerializingExecutor(30, "test2");
     private final Executor executor3 = Executors.newFixedThreadPool(10);
-    private final KeyAffinityExecutor<Integer> executor4 = newSerializingExecutor(() -> 30, 100, "test3");
+    private final KeyAffinityExecutor<Integer> executor4 = newSerializingExecutor(() -> 30, () -> 100, "test3");
 
     @Benchmark
     public void test() {

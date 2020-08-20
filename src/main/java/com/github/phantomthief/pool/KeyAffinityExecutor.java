@@ -84,7 +84,7 @@ public interface KeyAffinityExecutor<K> extends KeyAffinity<K, ListeningExecutor
      * @param threadName see {@link ThreadFactoryBuilder#setNameFormat(String)}
      */
     @Nonnull
-    static <K> KeyAffinityExecutor<K> newSerializingExecutor(IntSupplier parallelism, int queueBufferSize,
+    static <K> KeyAffinityExecutor<K> newSerializingExecutor(IntSupplier parallelism, IntSupplier queueBufferSize,
             String threadName) {
         return newKeyAffinityExecutor()
                 .parallelism(parallelism)
