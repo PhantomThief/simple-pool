@@ -1,8 +1,11 @@
 package com.github.phantomthief.pool.impl;
 
 import static com.github.phantomthief.pool.KeyAffinityExecutor.newKeyAffinityExecutor;
+import static com.github.phantomthief.pool.KeyAffinityExecutor.newSerializingExecutor;
 import static com.google.common.util.concurrent.Futures.allAsList;
+import static com.google.common.util.concurrent.SimpleTimeLimiter.create;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -16,13 +19,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.phantomthief.pool.KeyAffinityExecutor;
 import com.google.common.util.concurrent.ForwardingExecutorService;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.util.concurrent.TimeLimiter;
 
 /**
  * @author w.vela
@@ -30,6 +37,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 class KeyAffinityExecutorDynamicTest {
 
+    private static final Logger logger = LoggerFactory.getLogger(KeyAffinityExecutorDynamicTest.class);
     private static final int LOOP = 500;
 
     @Test
@@ -121,5 +129,43 @@ class KeyAffinityExecutorDynamicTest {
     private String currentThreadIdentity() {
         Thread thread = Thread.currentThread();
         return thread.toString() + "/" + thread.hashCode();
+    }
+
+    @Test
+    void testDynamicQueue() throws TimeoutException, InterruptedException {
+        TimeLimiter timeLimiter = create(newFixedThreadPool(10));
+        int[] count = {10};
+        KeyAffinityExecutor<Integer> executor = newSerializingExecutor(() -> 10, () -> count[0], "test");
+        for (int i = 0; i < 11; i++) {
+            int j = i;
+            executor.executeEx(1, () -> {
+                sleepUninterruptibly(1, SECONDS);
+            });
+        }
+        assertThrows(TimeoutException.class, () ->
+                timeLimiter.runWithTimeout(() -> {
+                    executor.executeEx(1, () -> {
+                        sleepUninterruptibly(1, SECONDS);
+                    });
+                }, 100, MILLISECONDS));
+
+        count[0] = 20;
+        sleepUninterruptibly(1, SECONDS);
+
+        timeLimiter.runWithTimeout(() -> {
+            executor.executeEx(1, () -> {
+                sleepUninterruptibly(1, SECONDS);
+            });
+        }, 100, MILLISECONDS);
+
+        count[0] = 5;
+        sleepUninterruptibly(1, SECONDS);
+
+        assertThrows(TimeoutException.class, () ->
+                timeLimiter.runWithTimeout(() -> {
+                    executor.executeEx(1, () -> {
+                        sleepUninterruptibly(1, SECONDS);
+                    });
+                }, 100, MILLISECONDS));
     }
 }

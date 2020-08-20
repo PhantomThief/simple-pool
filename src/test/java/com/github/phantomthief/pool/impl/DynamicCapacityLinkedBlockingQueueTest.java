@@ -1,20 +1,25 @@
 package com.github.phantomthief.pool.impl;
 
 import static com.github.phantomthief.pool.impl.DynamicCapacityLinkedBlockingQueue.lazyDynamicCapacityLinkedBlockingQueue;
+import static com.google.common.util.concurrent.SimpleTimeLimiter.create;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.TimeLimiter;
 
 /**
  * @author w.vela
@@ -113,5 +118,27 @@ class DynamicCapacityLinkedBlockingQueueTest {
         queue.clear();
         queue.add("test");
         //queue.remove(); // 这里会导致 NPE，感觉不是太健壮啊
+    }
+
+    @Test
+    void testPutBlock() throws InterruptedException {
+        int[] count = {10};
+        DynamicCapacityLinkedBlockingQueue<Object> queue = new DynamicCapacityLinkedBlockingQueue<>(() -> count[0]);
+        for (int i = 0; i < 10; i++) {
+            assertTrue(queue.offer("test"));
+        }
+        TimeLimiter timeLimiter = create(newFixedThreadPool(10));
+        assertThrows(TimeoutException.class, () -> {
+            timeLimiter.runWithTimeout(() -> {
+                try {
+                    queue.put("test");
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 1, SECONDS);
+        });
+        count[0] = 20;
+        sleepUninterruptibly(1, SECONDS);
+        queue.put("test");
     }
 }
