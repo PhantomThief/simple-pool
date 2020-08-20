@@ -18,6 +18,12 @@ public class DynamicCapacityLinkedBlockingQueue<E> implements BlockingQueue<E> {
     private final IntSupplier capacity;
     private final SimpleRateLimiter rateLimiter;
 
+    /**
+     * 可以动态调整 capacity 的 {@link java.util.concurrent.LinkedBlockingQueue}
+     * @param capacity 这里为了支持可变化性，所以当返回值 <= 0 时，容量为最大值 {@link Integer#MAX_VALUE}
+     *
+     * 注意: 当需要声明在 field 内初始化时，建议使用 {@link #lazyDynamicCapacityLinkedBlockingQueue(IntSupplier)}
+     */
     public DynamicCapacityLinkedBlockingQueue(IntSupplier capacity) {
         this.capacity = capacity;
         int thisCapacity = capacity.getAsInt();
@@ -25,6 +31,10 @@ public class DynamicCapacityLinkedBlockingQueue<E> implements BlockingQueue<E> {
         this.rateLimiter = SimpleRateLimiter.create(1);
     }
 
+    /**
+     * 参考构建函数 javadoc
+     * 本工具方法构建出来的实例只有在第一次使用时才会初始化资源，可以更安全的在 field 内声明并初始化
+     */
     public static <T> BlockingQueue<T> lazyDynamicCapacityLinkedBlockingQueue(IntSupplier capacity) {
         return new LazyBlockingQueue<>(() -> new DynamicCapacityLinkedBlockingQueue<>(capacity));
     }
