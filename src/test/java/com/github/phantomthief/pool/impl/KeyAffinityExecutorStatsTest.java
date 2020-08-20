@@ -68,8 +68,8 @@ class KeyAffinityExecutorStatsTest {
                     () -> keyAffinityExecutor.finishCall(null));
         }
 
-        executor1.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
-        executor2.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
+        executor1.executeEx(1, () -> sleepUninterruptibly(2, SECONDS));
+        executor2.executeEx(1, () -> sleepUninterruptibly(2, SECONDS));
         for (KeyAffinityExecutor<?> keyAffinityExecutor : all) {
             KeyAffinityExecutorStats stats = keyAffinityExecutor.stats();
             assertNotNull(stats);
@@ -88,12 +88,12 @@ class KeyAffinityExecutorStatsTest {
                     .mapToInt(SingleThreadPoolStats::getQueueRemainingCapacity)
                     .sum());
         }
-        sleepUninterruptibly(1, SECONDS);
+        sleepUninterruptibly(2, SECONDS);
 
-        executor1.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
-        executor2.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
-        executor1.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
-        executor2.executeEx(1, () -> sleepUninterruptibly(1, SECONDS));
+        executor1.executeEx(1, () -> sleepUninterruptibly(2, SECONDS));
+        executor2.executeEx(1, () -> sleepUninterruptibly(2, SECONDS));
+        executor1.executeEx(1, () -> sleepUninterruptibly(2, SECONDS));
+        executor2.executeEx(1, () -> sleepUninterruptibly(2, SECONDS));
 
         for (KeyAffinityExecutor<?> keyAffinityExecutor : all) {
             KeyAffinityExecutorStats stats = keyAffinityExecutor.stats();
