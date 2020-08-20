@@ -9,6 +9,10 @@ import java.util.function.IntSupplier;
 import com.github.phantomthief.util.SimpleRateLimiter;
 
 /**
+ * 备注，本类主要是用于给
+ * {@link com.github.phantomthief.pool.KeyAffinityExecutor#newSerializingExecutor(IntSupplier, IntSupplier, String)}
+ * 提供支持的，并不推荐大家直接使用，未来也可能会随时调整实现和行为
+ *
  * @author w.vela
  * Created on 2020-08-19.
  */
