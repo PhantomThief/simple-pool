@@ -53,6 +53,7 @@ public class DynamicCapacityLinkedBlockingQueue<E> implements BlockingQueue<E> {
 
     @Override
     public boolean add(E e) {
+        tryCheckCapacity();
         return queue.add(e);
     }
 
@@ -73,6 +74,7 @@ public class DynamicCapacityLinkedBlockingQueue<E> implements BlockingQueue<E> {
 
     @Override
     public boolean addAll(Collection<? extends E> c) {
+        tryCheckCapacity();
         return queue.addAll(c);
     }
 
@@ -114,6 +116,7 @@ public class DynamicCapacityLinkedBlockingQueue<E> implements BlockingQueue<E> {
 
     @Override
     public boolean offer(E o, long timeout, TimeUnit unit) throws InterruptedException {
+        tryCheckCapacity();
         return queue.offer(o, timeout, unit);
     }
 

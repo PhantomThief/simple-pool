@@ -146,4 +146,9 @@ class LazyBlockingQueue<E> implements BlockingQueue<E> {
     public int drainTo(Collection<? super E> c, int maxElements) {
         return factory.get().drainTo(c, maxElements);
     }
+
+    @Override
+    public String toString() {
+        return factory.get().toString();
+    }
 }
