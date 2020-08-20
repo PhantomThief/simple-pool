@@ -18,7 +18,7 @@ import com.github.phantomthief.util.SimpleRateLimiter;
  */
 public class DynamicCapacityLinkedBlockingQueue<E> implements BlockingQueue<E> {
 
-    private final VariableLinkedBlockingQueue<E> queue;
+    private final CapacitySettableLinkedBlockingQueue<E> queue;
     private final IntSupplier capacity;
     private final SimpleRateLimiter rateLimiter;
 
@@ -31,7 +31,7 @@ public class DynamicCapacityLinkedBlockingQueue<E> implements BlockingQueue<E> {
     public DynamicCapacityLinkedBlockingQueue(IntSupplier capacity) {
         this.capacity = capacity;
         int thisCapacity = capacity.getAsInt();
-        this.queue = new VariableLinkedBlockingQueue<>(thisCapacity <= 0 ? Integer.MAX_VALUE : thisCapacity);
+        this.queue = new CapacitySettableLinkedBlockingQueue<>(thisCapacity <= 0 ? Integer.MAX_VALUE : thisCapacity);
         this.rateLimiter = SimpleRateLimiter.create(1);
     }
 

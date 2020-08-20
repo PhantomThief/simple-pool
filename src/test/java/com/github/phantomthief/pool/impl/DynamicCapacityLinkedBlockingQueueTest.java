@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeoutException;
 
@@ -105,19 +106,21 @@ class DynamicCapacityLinkedBlockingQueueTest {
         queue.add("test");
         queue.drainTo(new ArrayList<>());
         queue.drainTo(new ArrayList<>(), 1);
+        assertThrows(NoSuchElementException.class, () -> queue.remove());
 
         queue.toString();
 
         Object[] objects = queue.toArray();
         assertTrue(objects.length == 0);
         queue.add("test");
-        String[] strings = queue.toArray(new String[0]);
+        Object[] strings = queue.toArray(new Object[0]);
         queue.remove("test");
         logger.info("{}", queue.toString());
 
         queue.clear();
+        assertTrue(queue.isEmpty());
         queue.add("test");
-        //queue.remove(); // 这里会导致 NPE，感觉不是太健壮啊
+        queue.remove(); // 这里会导致 NPE，感觉不是太健壮啊
     }
 
     @Test
