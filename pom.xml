@@ -43,9 +43,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/PhantomThief/simple-pool.git</connection>
+        <connection>scm:git:git@github.com:PhantomThief/simple-pool.git</connection>
         <url>https://github.com/PhantomThief/simple-pool.git</url>
-        <developerConnection>scm:git:https://github.com/PhantomThief/simple-pool.git
+        <developerConnection>scm:git:git@github.com:PhantomThief/simple-pool.git
         </developerConnection>
     </scm>
 
