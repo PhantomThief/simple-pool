@@ -2,9 +2,12 @@ package com.github.phantomthief.pool.impl;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.IntSupplier;
+import java.util.function.Predicate;
 
 import com.github.phantomthief.util.SimpleRateLimiter;
 
@@ -188,5 +191,20 @@ public class DynamicCapacityLinkedBlockingQueue<E> implements BlockingQueue<E> {
     @Override
     public Iterator<E> iterator() {
         return queue.iterator();
+    }
+
+    @Override
+    public Spliterator<E> spliterator() {
+        return queue.spliterator();
+    }
+
+    @Override
+    public void forEach(Consumer<? super E> action) {
+        queue.forEach(action);
+    }
+
+    @Override
+    public boolean removeIf(Predicate<? super E> filter) {
+        return queue.removeIf(filter);
     }
 }

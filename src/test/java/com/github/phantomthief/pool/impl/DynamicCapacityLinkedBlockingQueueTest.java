@@ -121,6 +121,12 @@ class DynamicCapacityLinkedBlockingQueueTest {
         assertTrue(queue.isEmpty());
         queue.add("test");
         queue.remove(); // 这里会导致 NPE，感觉不是太健壮啊
+
+        queue.add("test");
+        queue.stream().forEach(it -> assertEquals("test", it));
+        queue.forEach(it -> assertEquals("test", it));
+        queue.removeIf(it -> it.equals("test"));
+        assertTrue(queue.isEmpty());
     }
 
     @Test

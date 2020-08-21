@@ -4,8 +4,11 @@ import static com.github.phantomthief.util.MoreSuppliers.lazy;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
@@ -150,5 +153,20 @@ class LazyBlockingQueue<E> implements BlockingQueue<E> {
     @Override
     public String toString() {
         return factory.get().toString();
+    }
+
+    @Override
+    public boolean removeIf(Predicate<? super E> filter) {
+        return factory.get().removeIf(filter);
+    }
+
+    @Override
+    public Spliterator<E> spliterator() {
+        return factory.get().spliterator();
+    }
+
+    @Override
+    public void forEach(Consumer<? super E> action) {
+        factory.get().forEach(action);
     }
 }
