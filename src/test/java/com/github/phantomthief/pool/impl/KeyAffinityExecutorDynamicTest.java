@@ -5,6 +5,7 @@ import static com.github.phantomthief.pool.KeyAffinityExecutor.newSerializingExe
 import static com.google.common.util.concurrent.Futures.allAsList;
 import static com.google.common.util.concurrent.SimpleTimeLimiter.create;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -16,10 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -167,5 +171,80 @@ class KeyAffinityExecutorDynamicTest {
                         sleepUninterruptibly(1, SECONDS);
                     });
                 }, 100, MILLISECONDS));
+    }
+
+    @Test
+    void testReduceCountOnTheFly() throws TimeoutException, InterruptedException, ExecutionException {
+        Map<Integer, AtomicInteger> concurrencyMap = new ConcurrentHashMap<>();
+        Map<Integer, Integer> maxConcurrencyMap = new ConcurrentHashMap<>();
+        KeyAffinityImpl.setSleepBeforeClose(0);
+        TimeLimiter timeLimiter = create(newFixedThreadPool(10));
+        int[] count = {10};
+        int[] queue = {10};
+        List<ListenableFuture<?>> futures = new ArrayList<>();
+        KeyAffinityExecutor<Integer> executor = newSerializingExecutor(() -> count[0], () -> queue[0], "test");
+        for (int i = 0; i < 11; i++) {
+            futures.add(
+                    executor.submit(1, () -> {
+                        int i1 = concurrencyMap.computeIfAbsent(1, it -> new AtomicInteger()).incrementAndGet();
+                        maxConcurrencyMap.merge(1, i1, Math::max);
+                        sleepUninterruptibly(2, SECONDS);
+                        concurrencyMap.computeIfAbsent(1, it -> new AtomicInteger()).decrementAndGet();
+                        return null;
+                    }));
+        }
+        assertThrows(TimeoutException.class, () -> timeLimiter.runWithTimeout(() -> {
+            futures.add(
+                    executor.submit(1, () -> {
+                        int i1 = concurrencyMap.computeIfAbsent(1, it -> new AtomicInteger()).incrementAndGet();
+                        maxConcurrencyMap.merge(1, i1, Math::max);
+                        sleepUninterruptibly(1, SECONDS);
+                        concurrencyMap.computeIfAbsent(1, it -> new AtomicInteger()).decrementAndGet();
+                        return null;
+                    }));
+        }, ofMillis(200)));
+        queue[0] = 20;
+        sleepUninterruptibly(1, SECONDS);
+        timeLimiter.runWithTimeout(() -> {
+            futures.add(
+                    executor.submit(1, () -> {
+                        int i1 = concurrencyMap.computeIfAbsent(1, it -> new AtomicInteger()).incrementAndGet();
+                        maxConcurrencyMap.merge(1, i1, Math::max);
+                        sleepUninterruptibly(1, SECONDS);
+                        concurrencyMap.computeIfAbsent(1, it -> new AtomicInteger()).decrementAndGet();
+                        return null;
+                    }));
+        }, ofMillis(200));
+        count[0] = 2;
+        sleepUninterruptibly(1, SECONDS);
+
+        timeLimiter.runWithTimeout(() -> {
+            futures.add(
+                    executor.submit(1, () -> {
+                        int i1 = concurrencyMap.computeIfAbsent(1, it -> new AtomicInteger()).incrementAndGet();
+                        maxConcurrencyMap.merge(1, i1, Math::max);
+                        sleepUninterruptibly(1, SECONDS);
+                        concurrencyMap.computeIfAbsent(1, it -> new AtomicInteger()).decrementAndGet();
+                        return null;
+                    }));
+        }, ofMillis(200));
+
+        for (int i = 0; i < 21; i++) {
+            timeLimiter.runWithTimeout(() -> {
+                futures.add(
+                        executor.submit(2, () -> {
+                            int i1 = concurrencyMap.computeIfAbsent(2, it -> new AtomicInteger()).incrementAndGet();
+                            maxConcurrencyMap.merge(2, i1, Math::max);
+                            sleepUninterruptibly(1, SECONDS);
+                            concurrencyMap.computeIfAbsent(2, it -> new AtomicInteger()).decrementAndGet();
+                            return null;
+                        }));
+            }, ofMillis(200));
+        }
+
+        allAsList(futures).get();
+        maxConcurrencyMap.forEach((k, v) -> {
+            assertTrue(v <= 1);
+        });
     }
 }
