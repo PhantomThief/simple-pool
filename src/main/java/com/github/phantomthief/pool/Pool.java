@@ -10,6 +10,7 @@ import com.github.phantomthief.util.ThrowableFunction;
  * @author w.vela
  * Created on 06/09/2016.
  */
+@Deprecated
 public interface Pool<T> extends AutoCloseable {
 
     default <V, X extends Throwable> V supply(ThrowableFunction<T, V, X> function) throws X {

@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
  * @author w.vela
  * Created on 2017-10-19.
  */
+@Deprecated
 public interface Pooled<T> extends Supplier<T> {
 
     @Nonnull
