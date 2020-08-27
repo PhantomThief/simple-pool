@@ -14,6 +14,7 @@ import com.github.phantomthief.util.ThrowableFunction;
  */
 public interface KeyAffinity<K, V> extends AutoCloseable, Iterable<V> {
 
+    @Deprecated
     @Nonnull
     static <V> KeyAffinityBuilder<V> newBuilder() {
         return new KeyAffinityBuilder<>();
@@ -24,6 +25,7 @@ public interface KeyAffinity<K, V> extends AutoCloseable, Iterable<V> {
 
     void finishCall(K key);
 
+    @Deprecated
     default <T, X extends Throwable> T supply(K key, @Nonnull ThrowableFunction<V, T, X> func)
             throws X {
         checkNotNull(func);
@@ -35,6 +37,7 @@ public interface KeyAffinity<K, V> extends AutoCloseable, Iterable<V> {
         }
     }
 
+    @Deprecated
     default <X extends Throwable> void run(K key, @Nonnull ThrowableConsumer<V, X> func) throws X {
         supply(key, it -> {
             func.accept(it);
